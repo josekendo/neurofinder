@@ -1,5 +1,7 @@
 # NeuroFinder – Plataforma de inteligencia clínica para demencias
 
+> Consulta esta documentación en inglés: [README_en.md](README_en.md)
+
 NeuroFinder es una iniciativa de investigación orientada a centralizar evidencias clínicas sobre demencias y ofrecer un buscador semántico accesible tanto para profesionales sanitarios como para cuidadores. El proyecto se divide en tres grandes piezas:
 
 ## Recursos públicos

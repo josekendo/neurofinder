@@ -3,7 +3,8 @@
     "ABOUT": "Quiénes somos",
     "NEWS": "Noticias",
     "SEARCH": "Buscador",
-    "LANGUAGE": "Idioma"
+    "LANGUAGE": "Idioma",
+    "MENU": "Menú"
   },
   "HOME": {
     "TITLE": "NeuroFinder",
@@ -94,13 +95,30 @@
   "ERROR": {
     "GENERIC": "Opps parece que algo ha ido mal, inténtalo más tarde."
   },
+  "SOCIAL": {
+    "SHARE_ACTION": "Compartir este contenido",
+    "SHARE_MESSAGE": "Descubre NeuroFinder, el buscador avanzado sobre demencias.",
+    "TELEGRAM": "Telegram",
+    "WHATSAPP": "WhatsApp",
+    "FACEBOOK": "Facebook",
+    "X": "X",
+    "INSTAGRAM": "Instagram",
+    "LINKEDIN": "LinkedIn",
+    "SHARE_TELEGRAM": "Compartir en Telegram",
+    "SHARE_WHATSAPP": "Compartir en WhatsApp",
+    "SHARE_FACEBOOK": "Compartir en Facebook",
+    "SHARE_X": "Compartir en X",
+    "SHARE_INSTAGRAM": "Compartir en Instagram",
+    "SHARE_LINKEDIN": "Compartir en LinkedIn"
+  },
   "ERROR404": {
     "TITLE": "Lo sentimos, no encontramos la página",
     "SUBTITLE": "Es posible que el enlace haya expirado o que la dirección esté mal escrita.",
     "DESCRIPTION": "Revisa la URL, vuelve al inicio o utiliza el buscador para localizar la información clínica que necesitas.",
     "CTA": "Volver al inicio",
     "SEO_TITLE": "Página no encontrada | NeuroFinder",
-    "SEO_DESCRIPTION": "La página solicitada no existe en NeuroFinder. Vuelve al inicio para seguir explorando nuestro buscador clínico."
+    "SEO_DESCRIPTION": "La página solicitada no existe en NeuroFinder. Vuelve al inicio para seguir explorando nuestro buscador clínico.",
+    "IMAGE_ALT": "Página no encontrada en NeuroFinder"
   },
   "TITLE": {
     "HOME": "Inicio",
@@ -120,26 +138,32 @@
   "SEO": {
     "HOME": {
       "TITLE": "NeuroFinder | Buscador clínico de demencias",
-      "DESCRIPTION": "NeuroFinder es una plataforma del Máster en IA de UNIR que centraliza evidencias clínicas sobre demencias para agilizar la toma de decisiones."
+      "DESCRIPTION": "NeuroFinder es un buscador avanzado especializado en demencias que centraliza fuentes clínicas, científicas y divulgativas para ofrecer información rigurosa y accesible.",
+      "IMAGE_ALT": "NeuroFinder, buscador avanzado sobre demencias"
     },
     "SEARCH": {
       "TITLE": "Buscar {{topic}} | NeuroFinder",
-      "DESCRIPTION": "Explora publicaciones contrastadas sobre {{topic}} con el buscador semántico de NeuroFinder.",
+      "DESCRIPTION": "Explora información contrastada sobre {{topic}} con el buscador semántico de NeuroFinder y accede a evidencia centralizada.",
+      "IMAGE_ALT": "Resultados de NeuroFinder sobre {{topic}}",
       "DEFAULT_TOPIC": "demencias y trastornos neurocognitivos"
     },
     "NEWS": {
       "TITLE": "Noticias verificadas | NeuroFinder",
-      "DESCRIPTION": "Consulta las últimas noticias verificadas automáticamente sobre demencias y neurociencia clínica."
+      "DESCRIPTION": "Consulta noticias verificadas automáticamente sobre demencias y neurociencia clínica desde fuentes especializadas.",
+      "IMAGE_ALT": "Noticias verificadas en NeuroFinder sobre demencias"
     },
     "ABOUT": {
       "TITLE": "Quiénes somos | NeuroFinder",
-      "DESCRIPTION": "Descubre el proyecto NeuroFinder, desarrollado como TFM del Máster en IA de UNIR para ofrecer una herramienta útil a profesionales, familias y personas afectadas."
+      "DESCRIPTION": "Descubre NeuroFinder, un proyecto académico que reúne fuentes de demencia en un buscador avanzado para profesionales, familias y personas cuidadoras.",
+      "IMAGE_ALT": "Equipo y propósito de NeuroFinder"
     },
     "ARTICLE": {
       "TITLE": "{{title}} | NeuroFinder",
       "DESCRIPTION": "{{summary}}",
       "FALLBACK_TITLE": "Artículo sobre demencias | NeuroFinder",
-      "FALLBACK_DESCRIPTION": "Consulta análisis y evidencias clínicas en NeuroFinder, el buscador semántico especializado en demencias."
+      "FALLBACK_DESCRIPTION": "Consulta análisis y evidencia clínica en NeuroFinder, el buscador avanzado que centraliza información especializada en demencias.",
+      "IMAGE_ALT": "{{title}} - análisis de NeuroFinder",
+      "FALLBACK_IMAGE_ALT": "Artículo sobre demencias en NeuroFinder"
     }
   }
 }

@@ -150,12 +150,14 @@ export class ResultsPageComponent implements OnInit, OnDestroy {
     const title = this.translate.instant('SEO.SEARCH.TITLE', { topic });
     const description = this.translate.instant('SEO.SEARCH.DESCRIPTION', { topic });
     const locale = this.translate.currentLang === 'en' ? 'en_US' : 'es_ES';
+    const imageAlt = this.translate.instant('SEO.SEARCH.IMAGE_ALT', { topic });
 
     this.seo.update({
       title,
       description,
       path: '/search',
-      locale
+      locale,
+      imageAlt
     });
   }
 }

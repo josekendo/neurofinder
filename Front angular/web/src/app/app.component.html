@@ -1,26 +1,80 @@
 <mat-toolbar color="primary" class="app-toolbar" role="navigation">
+  <button
+    mat-icon-button
+    class="mobile-menu-trigger"
+    [matMenuTriggerFor]="mobileNavMenu"
+    [attr.aria-label]="'NAV.MENU' | translate"
+  >
+    <mat-icon>menu</mat-icon>
+  </button>
   <button mat-button class="brand" routerLink="/">
     <mat-icon>health_and_safety</mat-icon>
     NeuroFinder
   </button>
   <span class="toolbar-spacer"></span>
-  <button mat-button routerLink="/quienes-somos" routerLinkActive="active">
-    <mat-icon>diversity_3</mat-icon>
-    {{ 'NAV.ABOUT' | translate }}
-  </button>
-  <button mat-button routerLink="/news" routerLinkActive="active">
-    <mat-icon>article</mat-icon>
-    {{ 'NAV.NEWS' | translate }}
-  </button>
-  <button mat-button routerLink="/search" routerLinkActive="active">
-    <mat-icon>search</mat-icon>
-    {{ 'NAV.SEARCH' | translate }}
-  </button>
+  <div class="nav-links">
+    <button mat-button routerLink="/quienes-somos" routerLinkActive="active">
+      <mat-icon>diversity_3</mat-icon>
+      {{ 'NAV.ABOUT' | translate }}
+    </button>
+    <button mat-button routerLink="/news" routerLinkActive="active">
+      <mat-icon>article</mat-icon>
+      {{ 'NAV.NEWS' | translate }}
+    </button>
+    <button mat-button routerLink="/search" routerLinkActive="active">
+      <mat-icon>search</mat-icon>
+      {{ 'NAV.SEARCH' | translate }}
+    </button>
+  </div>
+  <div class="mobile-actions">
+    @if (showShareFab) {
+      <button
+        mat-icon-button
+        class="mobile-share"
+        [matMenuTriggerFor]="shareMenu"
+        [attr.aria-label]="'SOCIAL.SHARE_ACTION' | translate"
+      >
+        <mat-icon>share</mat-icon>
+      </button>
+    }
+    <button
+      mat-icon-button
+      class="mobile-language"
+      [matMenuTriggerFor]="langMenu"
+      [attr.aria-label]="'NAV.LANGUAGE' | translate"
+    >
+      <mat-icon>language</mat-icon>
+    </button>
+  </div>
   <mat-menu #langMenu="matMenu">
     @for (lang of languages; track lang.code) {
       <button mat-menu-item (click)="switchLanguage(lang.code)">
         <span>{{ lang.label }}</span>
         <span class="flag-right">{{ lang.flag }}</span>
+      </button>
+    }
+  </mat-menu>
+  <mat-menu #mobileNavMenu="matMenu">
+    <button mat-menu-item routerLink="/quienes-somos">
+      <mat-icon>diversity_3</mat-icon>
+      <span>{{ 'NAV.ABOUT' | translate }}</span>
+    </button>
+    <button mat-menu-item routerLink="/news">
+      <mat-icon>article</mat-icon>
+      <span>{{ 'NAV.NEWS' | translate }}</span>
+    </button>
+    <button mat-menu-item routerLink="/search">
+      <mat-icon>search</mat-icon>
+      <span>{{ 'NAV.SEARCH' | translate }}</span>
+    </button>
+    <button mat-menu-item [matMenuTriggerFor]="langMenu">
+      <mat-icon>language</mat-icon>
+      <span>{{ 'NAV.LANGUAGE' | translate }}</span>
+    </button>
+    @if (showShareFab) {
+      <button mat-menu-item [matMenuTriggerFor]="shareMenu">
+        <mat-icon>share</mat-icon>
+        <span>{{ 'SOCIAL.SHARE_ACTION' | translate }}</span>
       </button>
     }
   </mat-menu>
@@ -43,8 +97,37 @@
   </section>
 </footer>
 
-<div class="language-fab">
+<div class="language-fab" [style.--fab-offset]="fabOffset + 'px'">
   <button mat-fab color="primary" [matMenuTriggerFor]="langMenu" class="lang-trigger">
     <mat-icon>language</mat-icon>
   </button>
 </div>
+
+@if (showShareFab) {
+  <div class="share-fab" [style.--fab-offset]="fabOffset + 'px'">
+    <button
+      mat-fab
+      color="accent"
+      class="share-trigger"
+      [matMenuTriggerFor]="shareMenu"
+      [attr.aria-label]="'SOCIAL.SHARE_ACTION' | translate"
+    >
+      <mat-icon>share</mat-icon>
+    </button>
+  </div>
+}
+
+<mat-menu #shareMenu="matMenu" class="share-menu">
+  @for (link of socialLinks; track link.id) {
+    <a
+      mat-menu-item
+      [href]="link.url"
+      target="_blank"
+      rel="noopener noreferrer"
+      [attr.aria-label]="link.ariaKey | translate"
+    >
+      <mat-icon>{{ link.icon }}</mat-icon>
+      <span>{{ link.labelKey | translate }}</span>
+    </a>
+  }
+</mat-menu>

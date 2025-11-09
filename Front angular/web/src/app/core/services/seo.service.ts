@@ -7,6 +7,7 @@ export interface SeoConfig {
   description?: string;
   path?: string;
   image?: string;
+  imageAlt?: string;
   type?: 'website' | 'article';
   locale?: string;
   extra?: MetaDefinition[];
@@ -17,6 +18,9 @@ export class SeoService {
   private readonly meta = inject(Meta);
   private readonly title = inject(Title);
   private readonly baseUrl = 'https://www.neurofinder.org';
+  private readonly defaultImagePath = '/assets/meta/og-default.png';
+  private readonly defaultImageAlt =
+    'NeuroFinder, buscador avanzado sobre demencias que centraliza evidencia clínica';
 
   constructor(@Inject(DOCUMENT) private readonly document: Document) {}
 
@@ -25,8 +29,10 @@ export class SeoService {
     const title = config.title ?? 'NeuroFinder';
     const description =
       config.description ??
-      'NeuroFinder centraliza evidencias clínicas sobre demencias para agilizar la búsqueda de información fiable.';
+      'NeuroFinder es un buscador avanzado especializado en demencias que centraliza fuentes clínicas, científicas y divulgativas para ofrecer información rigurosa y accesible.';
     const url = this.resolveUrl(config.path);
+    const image = this.resolveUrl(config.image ?? this.defaultImagePath);
+    const imageAlt = config.imageAlt ?? this.defaultImageAlt;
 
     this.title.setTitle(title);
 
@@ -39,14 +45,17 @@ export class SeoService {
     this.meta.updateTag({ property: 'og:url', content: url });
     this.meta.updateTag({ property: 'og:site_name', content: 'NeuroFinder' });
 
-    this.meta.updateTag({ name: 'twitter:card', content: config.image ? 'summary_large_image' : 'summary' });
     this.meta.updateTag({ name: 'twitter:title', content: title });
     this.meta.updateTag({ name: 'twitter:description', content: description });
 
-    if (config.image) {
-      this.meta.updateTag({ property: 'og:image', content: config.image });
-      this.meta.updateTag({ name: 'twitter:image', content: config.image });
-    }
+    this.meta.updateTag({ property: 'og:image', content: image });
+    this.meta.updateTag({ property: 'og:image:secure_url', content: image });
+    this.meta.updateTag({ property: 'og:image:width', content: '1200' });
+    this.meta.updateTag({ property: 'og:image:height', content: '630' });
+    this.meta.updateTag({ property: 'og:image:alt', content: imageAlt });
+    this.meta.updateTag({ name: 'twitter:image', content: image });
+    this.meta.updateTag({ name: 'twitter:image:alt', content: imageAlt });
+    this.meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
 
     if (config.locale) {
       this.meta.updateTag({ property: 'og:locale', content: config.locale });

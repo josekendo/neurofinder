@@ -40,13 +40,15 @@ export class NotFoundPageComponent implements OnInit, OnDestroy {
     const title = this.translate.instant('ERROR404.SEO_TITLE');
     const description = this.translate.instant('ERROR404.SEO_DESCRIPTION');
     const locale = this.translate.currentLang === 'en' ? 'en_US' : 'es_ES';
+    const imageAlt = this.translate.instant('ERROR404.IMAGE_ALT');
 
     this.seo.update({
       title,
       description,
       path: '/404',
       locale,
-      type: 'website'
+      type: 'website',
+      imageAlt
     });
   }
 }

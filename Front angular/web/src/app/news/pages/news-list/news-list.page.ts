@@ -37,12 +37,14 @@ export class NewsListPageComponent implements OnInit, OnDestroy {
     const title = this.translate.instant('SEO.NEWS.TITLE');
     const description = this.translate.instant('SEO.NEWS.DESCRIPTION');
     const locale = this.translate.currentLang === 'en' ? 'en_US' : 'es_ES';
+    const imageAlt = this.translate.instant('SEO.NEWS.IMAGE_ALT');
 
     this.seo.update({
       title,
       description,
       path: '/news',
-      locale
+      locale,
+      imageAlt
     });
   }
 }

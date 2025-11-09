@@ -107,12 +107,14 @@ export class HomePageComponent implements OnInit, OnDestroy {
     const title = this.translate.instant('SEO.HOME.TITLE');
     const description = this.translate.instant('SEO.HOME.DESCRIPTION');
     const locale = this.translate.currentLang === 'en' ? 'en_US' : 'es_ES';
+    const imageAlt = this.translate.instant('SEO.HOME.IMAGE_ALT');
 
     this.seo.update({
       title,
       description,
       path: '/',
-      locale
+      locale,
+      imageAlt
     });
   }
 }

@@ -34,12 +34,14 @@ export class AboutPageComponent implements OnInit, OnDestroy {
     const title = this.translate.instant('SEO.ABOUT.TITLE');
     const description = this.translate.instant('SEO.ABOUT.DESCRIPTION');
     const locale = this.translate.currentLang === 'en' ? 'en_US' : 'es_ES';
+    const imageAlt = this.translate.instant('SEO.ABOUT.IMAGE_ALT');
 
     this.seo.update({
       title,
       description,
       path: '/quienes-somos',
-      locale
+      locale,
+      imageAlt
     });
   }
 }

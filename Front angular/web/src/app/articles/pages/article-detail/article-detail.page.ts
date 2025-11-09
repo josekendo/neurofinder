@@ -72,23 +72,27 @@ export class ArticleDetailPageComponent implements OnDestroy {
       const summary = rawSummary.length > 220 ? `${rawSummary.slice(0, 217)}...` : rawSummary;
       const title = this.translate.instant('SEO.ARTICLE.TITLE', { title: article.title });
       const description = this.translate.instant('SEO.ARTICLE.DESCRIPTION', { summary });
+      const imageAlt = this.translate.instant('SEO.ARTICLE.IMAGE_ALT', { title: article.title });
 
       this.seo.update({
         title,
         description,
         path: `/articles/${article.id}`,
         type: 'article',
-        locale
+        locale,
+        imageAlt
       });
     } else {
       const title = this.translate.instant('SEO.ARTICLE.FALLBACK_TITLE');
       const description = this.translate.instant('SEO.ARTICLE.FALLBACK_DESCRIPTION');
+      const imageAlt = this.translate.instant('SEO.ARTICLE.FALLBACK_IMAGE_ALT');
       this.seo.update({
         title,
         description,
         path: '/articles',
         type: 'article',
-        locale
+        locale,
+        imageAlt
       });
     }
   }

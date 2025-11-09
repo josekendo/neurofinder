@@ -30,5 +30,15 @@ def evaluacion(req: func.HttpRequest) -> func.HttpResponse:
 
     return func.HttpResponse(
             "Evaluando...",
+            status_code=200s
+    )
+
+@app.function_name(name="buscador")
+@app.route(route="buscador")
+def evaluacion(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info('Buscador comenzando.')
+
+    return func.HttpResponse(
+            "Buscando...",
             status_code=200
     )

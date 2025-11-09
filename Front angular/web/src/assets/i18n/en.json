@@ -1,5 +1,6 @@
 {
   "NAV": {
+    "ABOUT": "About",
     "NEWS": "News",
     "SEARCH": "Search",
     "LANGUAGE": "Language"
@@ -93,11 +94,53 @@
   "ERROR": {
     "GENERIC": "Oops, something went wrong. Please try again later."
   },
+  "ERROR404": {
+    "TITLE": "Sorry, we can’t find that page",
+    "SUBTITLE": "The link may be outdated or the address might be misspelled.",
+    "DESCRIPTION": "Double-check the URL, return to the homepage or use the search engine to keep exploring curated clinical evidence.",
+    "CTA": "Back to homepage",
+    "SEO_TITLE": "Page not found | NeuroFinder",
+    "SEO_DESCRIPTION": "The requested page does not exist on NeuroFinder. Head back to continue exploring our clinical evidence search."
+  },
   "TITLE": {
     "HOME": "Home",
     "SEARCH": "Search",
     "ARTICLE": "Article",
-    "NEWS": "News"
+    "NEWS": "News",
+    "ABOUT": "About"
+  },
+  "ABOUT": {
+    "TITLE": "About NeuroFinder",
+    "SUBTITLE": "An academic project with a social mission.",
+    "DESCRIPTION": "NeuroFinder was created as the Master’s Thesis for the Artificial Intelligence Master’s program at Universidad Internacional de La Rioja (UNIR).",
+    "PURPOSE": "Our goal is to streamline the search for clinical and scientific information on dementias through a specialised semantic engine.",
+    "MOTIVATION": "The motivation behind the project is twofold: accelerate evidence discovery for professionals and provide a useful, supportive tool for families and people affected.",
+    "CONTACT_BUTTON": "Connect on LinkedIn"
+  },
+  "SEO": {
+    "HOME": {
+      "TITLE": "NeuroFinder | Clinical dementia search",
+      "DESCRIPTION": "NeuroFinder is a UNIR AI Master’s capstone project that centralises clinical evidence on dementias to speed up decision making."
+    },
+    "SEARCH": {
+      "TITLE": "Search {{topic}} | NeuroFinder",
+      "DESCRIPTION": "Explore vetted publications on {{topic}} with NeuroFinder’s semantic engine.",
+      "DEFAULT_TOPIC": "dementia and neurocognitive disorders"
+    },
+    "NEWS": {
+      "TITLE": "Verified news | NeuroFinder",
+      "DESCRIPTION": "Stay up to date with automatically verified dementia and clinical neuroscience updates."
+    },
+    "ABOUT": {
+      "TITLE": "About NeuroFinder | NeuroFinder",
+      "DESCRIPTION": "Learn about NeuroFinder, a UNIR AI Master’s thesis project built to support professionals, families and people affected by dementia."
+    },
+    "ARTICLE": {
+      "TITLE": "{{title}} | NeuroFinder",
+      "DESCRIPTION": "{{summary}}",
+      "FALLBACK_TITLE": "Dementia insights | NeuroFinder",
+      "FALLBACK_DESCRIPTION": "Access clinical evidence and curated analyses with NeuroFinder, the specialised semantic search engine for dementia."
+    }
   }
 }
 

@@ -1,27 +1,26 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { Router } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subject, takeUntil } from 'rxjs';
 
-import { ApiService } from '../../../core/services/api.service';
-import { NewsGridComponent } from '../../../shared/components/news-grid/news-grid.component';
 import { SeoService } from '../../../core/services/seo.service';
 
 @Component({
   standalone: true,
-  selector: 'app-news-list-page',
-  imports: [CommonModule, TranslateModule, NewsGridComponent],
-  templateUrl: './news-list.page.html',
-  styleUrl: './news-list.page.scss',
+  selector: 'app-not-found-page',
+  imports: [CommonModule, MatButtonModule, MatIconModule, TranslateModule],
+  templateUrl: './not-found.page.html',
+  styleUrl: './not-found.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class NewsListPageComponent implements OnInit, OnDestroy {
-  private readonly api = inject(ApiService);
+export class NotFoundPageComponent implements OnInit, OnDestroy {
+  private readonly router = inject(Router);
   private readonly translate = inject(TranslateService);
   private readonly seo = inject(SeoService);
   private readonly destroy$ = new Subject<void>();
-
-  readonly news$ = this.api.getNews();
 
   ngOnInit(): void {
     this.updateSeo();
@@ -33,16 +32,21 @@ export class NewsListPageComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  goHome(): void {
+    this.router.navigateByUrl('/');
+  }
+
   private updateSeo(): void {
-    const title = this.translate.instant('SEO.NEWS.TITLE');
-    const description = this.translate.instant('SEO.NEWS.DESCRIPTION');
+    const title = this.translate.instant('ERROR404.SEO_TITLE');
+    const description = this.translate.instant('ERROR404.SEO_DESCRIPTION');
     const locale = this.translate.currentLang === 'en' ? 'en_US' : 'es_ES';
 
     this.seo.update({
       title,
       description,
-      path: '/news',
-      locale
+      path: '/404',
+      locale,
+      type: 'website'
     });
   }
 }

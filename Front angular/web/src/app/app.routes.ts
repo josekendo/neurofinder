@@ -24,7 +24,17 @@ export const routes: Routes = [
       import('./news/pages/news-list/news-list.page').then((m) => m.NewsListPageComponent)
   },
   {
+    path: 'quienes-somos',
+    loadComponent: () =>
+      import('./about/pages/about/about.page').then((m) => m.AboutPageComponent)
+  },
+  {
+    path: '404',
+    loadComponent: () =>
+      import('./errors/pages/not-found/not-found.page').then((m) => m.NotFoundPageComponent)
+  },
+  {
     path: '**',
-    redirectTo: ''
+    redirectTo: '404'
   }
 ];

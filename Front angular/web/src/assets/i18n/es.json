@@ -1,5 +1,6 @@
 {
   "NAV": {
+    "ABOUT": "Quiénes somos",
     "NEWS": "Noticias",
     "SEARCH": "Buscador",
     "LANGUAGE": "Idioma"
@@ -93,11 +94,53 @@
   "ERROR": {
     "GENERIC": "Opps parece que algo ha ido mal, inténtalo más tarde."
   },
+  "ERROR404": {
+    "TITLE": "Lo sentimos, no encontramos la página",
+    "SUBTITLE": "Es posible que el enlace haya expirado o que la dirección esté mal escrita.",
+    "DESCRIPTION": "Revisa la URL, vuelve al inicio o utiliza el buscador para localizar la información clínica que necesitas.",
+    "CTA": "Volver al inicio",
+    "SEO_TITLE": "Página no encontrada | NeuroFinder",
+    "SEO_DESCRIPTION": "La página solicitada no existe en NeuroFinder. Vuelve al inicio para seguir explorando nuestro buscador clínico."
+  },
   "TITLE": {
     "HOME": "Inicio",
     "SEARCH": "Resultados",
     "ARTICLE": "Detalle",
-    "NEWS": "Noticias"
+    "NEWS": "Noticias",
+    "ABOUT": "Quiénes somos"
+  },
+  "ABOUT": {
+    "TITLE": "Quiénes somos",
+    "SUBTITLE": "Un proyecto académico con vocación social.",
+    "DESCRIPTION": "NeuroFinder nace como Trabajo de Fin de Máster del Máster en Inteligencia Artificial de la Universidad Internacional de La Rioja (UNIR).",
+    "PURPOSE": "Nuestro propósito es agilizar la búsqueda de información clínica y científica sobre demencias mediante un buscador semántico especializado.",
+    "MOTIVATION": "La motivación del proyecto es doble: acelerar el acceso a evidencias para profesionales y crear una herramienta útil y cercana para familiares y personas afectadas.",
+    "CONTACT_BUTTON": "Contactar por LinkedIn"
+  },
+  "SEO": {
+    "HOME": {
+      "TITLE": "NeuroFinder | Buscador clínico de demencias",
+      "DESCRIPTION": "NeuroFinder es una plataforma del Máster en IA de UNIR que centraliza evidencias clínicas sobre demencias para agilizar la toma de decisiones."
+    },
+    "SEARCH": {
+      "TITLE": "Buscar {{topic}} | NeuroFinder",
+      "DESCRIPTION": "Explora publicaciones contrastadas sobre {{topic}} con el buscador semántico de NeuroFinder.",
+      "DEFAULT_TOPIC": "demencias y trastornos neurocognitivos"
+    },
+    "NEWS": {
+      "TITLE": "Noticias verificadas | NeuroFinder",
+      "DESCRIPTION": "Consulta las últimas noticias verificadas automáticamente sobre demencias y neurociencia clínica."
+    },
+    "ABOUT": {
+      "TITLE": "Quiénes somos | NeuroFinder",
+      "DESCRIPTION": "Descubre el proyecto NeuroFinder, desarrollado como TFM del Máster en IA de UNIR para ofrecer una herramienta útil a profesionales, familias y personas afectadas."
+    },
+    "ARTICLE": {
+      "TITLE": "{{title}} | NeuroFinder",
+      "DESCRIPTION": "{{summary}}",
+      "FALLBACK_TITLE": "Artículo sobre demencias | NeuroFinder",
+      "FALLBACK_DESCRIPTION": "Consulta análisis y evidencias clínicas en NeuroFinder, el buscador semántico especializado en demencias."
+    }
   }
 }
 

@@ -2,6 +2,11 @@
 
 NeuroFinder es una iniciativa de investigación orientada a centralizar evidencias clínicas sobre demencias y ofrecer un buscador semántico accesible tanto para profesionales sanitarios como para cuidadores. El proyecto se divide en tres grandes piezas:
 
+## Recursos públicos
+
+- **Dominio de la aplicación**: [`www.neurofinder.org`](https://www.neurofinder.org)
+- **Diseño en Figma**: [`NeuroFinder`](https://www.figma.com/design/Nb5zOGw6UgJkumD34uuzMO/NeuroFinder?node-id=0-1&t=pMxAYJ03iCaGBp0O-1)
+
 - **Frontend SPA (`Front angular/web`)**: aplicación Angular 18 que ofrece la experiencia de usuario completa (búsqueda, resultados, detalle de artículos y métricas).
 - **Backend ligero en PHP (`Back php/api`)**: API REST que actúa como orquestador, expone los endpoints públicos y coordina la lógica de negocio con servicios internos.
 - **Azure Functions (`Functions Azure`)**: conjunto de funciones serverless destinadas a la ingesta, procesamiento y evaluación de las fuentes externas que alimentan el buscador.

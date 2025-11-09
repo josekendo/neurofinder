@@ -1,0 +1,13 @@
+RewriteEngine On
+
+# Fuerza HTTPS
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Sirve archivos y directorios existentes
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Fallback SPA Angular (otras rutas vuelven a index.html)
+RewriteRule ^ index.html [L]

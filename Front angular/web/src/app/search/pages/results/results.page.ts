@@ -5,7 +5,7 @@ import { Store } from '@ngrx/store';
 import { Subject, takeUntil } from 'rxjs';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatDividerModule } from '@angular/material/divider';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -23,6 +23,7 @@ import {
   selectResults
 } from '../../state/search.reducer';
 import { SearchFilters } from '../../../core/models/content.models';
+import { SeoService } from '../../../core/services/seo.service';
 
 @Component({
   standalone: true,
@@ -49,7 +50,10 @@ export class ResultsPageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly store = inject(Store);
   private readonly fb = inject(FormBuilder);
+  private readonly translate = inject(TranslateService);
+  private readonly seo = inject(SeoService);
   private readonly destroy$ = new Subject<void>();
+  private currentQuery = '';
 
   readonly results$ = this.store.select(selectResults);
   readonly filters$ = this.store.select(selectFilters);
@@ -102,8 +106,12 @@ export class ResultsPageComponent implements OnInit, OnDestroy {
     });
 
     this.query$.pipe(takeUntil(this.destroy$)).subscribe((query) => {
+      this.currentQuery = query ?? '';
       this.searchForm.patchValue({ query }, { emitEvent: false });
+      this.updateSeo(this.currentQuery);
     });
+
+    this.translate.onLangChange.pipe(takeUntil(this.destroy$)).subscribe(() => this.updateSeo(this.currentQuery));
   }
 
   ngOnDestroy(): void {
@@ -134,6 +142,20 @@ export class ResultsPageComponent implements OnInit, OnDestroy {
       relativeTo: this.route,
       queryParams: { q: query || null },
       queryParamsHandling: 'merge'
+    });
+  }
+
+  private updateSeo(query: string): void {
+    const topic = query?.trim() ? query.trim() : this.translate.instant('SEO.SEARCH.DEFAULT_TOPIC');
+    const title = this.translate.instant('SEO.SEARCH.TITLE', { topic });
+    const description = this.translate.instant('SEO.SEARCH.DESCRIPTION', { topic });
+    const locale = this.translate.currentLang === 'en' ? 'en_US' : 'es_ES';
+
+    this.seo.update({
+      title,
+      description,
+      path: '/search',
+      locale
     });
   }
 }

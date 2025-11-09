@@ -4,6 +4,10 @@
     NeuroFinder
   </button>
   <span class="toolbar-spacer"></span>
+  <button mat-button routerLink="/quienes-somos" routerLinkActive="active">
+    <mat-icon>diversity_3</mat-icon>
+    {{ 'NAV.ABOUT' | translate }}
+  </button>
   <button mat-button routerLink="/news" routerLinkActive="active">
     <mat-icon>article</mat-icon>
     {{ 'NAV.NEWS' | translate }}
@@ -34,6 +38,7 @@
   <section class="links">
     <a routerLink="/search" routerLinkActive="active">{{ 'NAV.SEARCH' | translate }}</a>
     <a routerLink="/news" routerLinkActive="active">{{ 'NAV.NEWS' | translate }}</a>
+    <a routerLink="/quienes-somos" routerLinkActive="active">{{ 'NAV.ABOUT' | translate }}</a>
     <a href="mailto:contacto&#64;neurofinder.org">contacto&#64;neurofinder.org</a>
   </section>
 </footer>

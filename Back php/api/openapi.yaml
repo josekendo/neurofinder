@@ -1,0 +1,296 @@
+openapi: 3.1.0
+info:
+  title: NeuroFinder API (Mock profile)
+  description: |
+    API REST expuesta por el backend PHP. El despliegue estándar vive bajo `/api`
+    (por ejemplo `https://neurofinder.org/api`). La implementación actual responde
+    con datos mock mientras `APP_PROFILE=mock`.
+  version: 0.1.0
+servers:
+  - url: https://neurofinder.org/api
+    description: Producción
+  - url: http://localhost:8000
+    description: Desarrollo local
+paths:
+  /health:
+    get:
+      summary: Comprobar estado del servicio
+      responses:
+        '200':
+          description: Estado OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+  /metrics:
+    get:
+      summary: Obtener métricas generales del índice
+      responses:
+        '200':
+          description: Métricas mock del índice
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsSnapshot'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /news/latest:
+    get:
+      summary: Listar noticias recientes verificadas
+      responses:
+        '200':
+          description: Colección de noticias mock
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NewsItem'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /search:
+    post:
+      summary: Buscar artículos
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Resultados de la búsqueda mock
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ArticleSummary'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /articles/{id}:
+    get:
+      summary: Obtener el detalle de un artículo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Identificador único del artículo
+      responses:
+        '200':
+          description: Detalle del artículo mock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+components:
+  responses:
+    BadRequest:
+      description: Petición inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ServerError:
+      description: Error interno de servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        profile:
+          type: string
+          description: Perfil activo (`mock` o `active`)
+          example: mock
+        timestamp:
+          type: string
+          format: date-time
+          example: 2025-07-24T10:15:30Z
+      required:
+        - status
+        - profile
+        - timestamp
+    MetricsSnapshot:
+      type: object
+      properties:
+        sources:
+          type: integer
+          example: 128
+        articles:
+          type: integer
+          example: 6423
+        updatedAt:
+          type: string
+          format: date-time
+          example: 2025-07-23T12:45:00Z
+      required:
+        - sources
+        - articles
+        - updatedAt
+    NewsItem:
+      type: object
+      properties:
+        id:
+          type: string
+          example: news-001
+        title:
+          type: string
+        summary:
+          type: string
+        publishedAt:
+          type: string
+          format: date
+        url:
+          type: string
+          format: uri
+        tags:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - title
+        - summary
+        - publishedAt
+        - url
+        - tags
+    ArticleSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          example: alzheimers-2025-001
+        title:
+          type: string
+        excerpt:
+          type: string
+        publishedAt:
+          type: string
+          format: date
+        processedAt:
+          type: string
+          format: date
+        score:
+          type: number
+          format: float
+          example: 0.92
+        source:
+          type: string
+        language:
+          type: string
+          example: es
+        tags:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - title
+        - excerpt
+        - publishedAt
+        - processedAt
+        - score
+        - source
+        - language
+        - tags
+    ArticleDetail:
+      allOf:
+        - $ref: '#/components/schemas/ArticleSummary'
+        - type: object
+          properties:
+            summary:
+              type: string
+            keyPoints:
+              type: array
+              items:
+                type: string
+            related:
+              type: array
+              items:
+                $ref: '#/components/schemas/ArticleSummary'
+            originalUrl:
+              type: string
+              format: uri
+          required:
+            - summary
+            - keyPoints
+            - related
+            - originalUrl
+    SearchFilters:
+      type: object
+      properties:
+        dementiaTypes:
+          type: array
+          items:
+            type: string
+        documentTypes:
+          type: array
+          items:
+            type: string
+        languages:
+          type: array
+          items:
+            type: string
+        dateFrom:
+          type: string
+          format: date
+          nullable: true
+        dateTo:
+          type: string
+          format: date
+          nullable: true
+        minScore:
+          type: number
+          format: float
+          nullable: true
+        sortBy:
+          type: string
+          enum:
+            - score
+            - date
+      required:
+        - dementiaTypes
+        - documentTypes
+        - languages
+        - sortBy
+    SearchRequest:
+      type: object
+      properties:
+        query:
+          type: string
+          description: Texto a buscar (puede ser vacío)
+        filters:
+          $ref: '#/components/schemas/SearchFilters'
+      required:
+        - query
+        - filters
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Artículo no encontrado
+      required:
+        - error
+
+

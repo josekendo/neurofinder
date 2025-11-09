@@ -1,0 +1,28 @@
+<section class="metrics-banner" aria-live="polite">
+  <div class="metric">
+    <mat-icon>library_books</mat-icon>
+    <div>
+      <span class="value">{{ metrics?.sources ?? '—' }}</span>
+      <span class="label">{{ 'HOME.METRIC_SOURCES' | translate }}</span>
+    </div>
+  </div>
+
+  <div class="metric">
+    <mat-icon>science</mat-icon>
+    <div>
+      <span class="value">{{ metrics?.articles ?? '—' }}</span>
+      <span class="label">{{ 'HOME.METRIC_ARTICLES' | translate }}</span>
+    </div>
+  </div>
+
+  <div class="metric">
+    <mat-icon>schedule</mat-icon>
+    <div>
+      <span class="value">
+        {{ metrics?.updatedAt ? (metrics?.updatedAt | date : 'short') : '—' }}
+      </span>
+      <span class="label">{{ 'HOME.METRIC_UPDATED' | translate }}</span>
+    </div>
+  </div>
+</section>
+

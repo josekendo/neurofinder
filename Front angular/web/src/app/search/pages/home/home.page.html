@@ -1,0 +1,57 @@
+<section class="hero">
+  <div class="hero-copy">
+    <h1>{{ 'HOME.TITLE' | translate }}</h1>
+    <p>{{ 'HOME.SUBTITLE' | translate }}</p>
+
+    <form class="search-bar" [formGroup]="searchForm" (ngSubmit)="submit()">
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'HOME.SEARCH_PLACEHOLDER' | translate }}</mat-label>
+        <input matInput formControlName="query">
+      </mat-form-field>
+      <button mat-flat-button color="primary" type="submit">
+        <mat-icon>search</mat-icon>
+        {{ 'HOME.SEARCH_BUTTON' | translate }}
+      </button>
+    </form>
+  </div>
+
+  @if (metricsError$ | async) {
+    <p class="error-banner" role="alert">{{ 'ERROR.GENERIC' | translate }}</p>
+  }
+
+  <app-metrics-banner [metrics]="metrics$ | async"></app-metrics-banner>
+</section>
+
+<section class="latest-results">
+  <header>
+    <h2>{{ 'SEARCH.TITLE' | translate }}</h2>
+    <a mat-button color="primary" routerLink="/search">{{ 'NAV.SEARCH' | translate }}</a>
+  </header>
+
+  @if (loading$ | async) {
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  }
+
+  @if (error$ | async; as errorKey) {
+    <p class="error-banner" role="alert">{{ errorKey | translate }}</p>
+  }
+
+  <div class="articles">
+    @for (article of results$ | async; track article.id) {
+      <app-article-card [article]="article" (tagSelected)="handleTag($event)"></app-article-card>
+    } @empty {
+      <p class="empty">{{ 'SEARCH.NO_RESULTS' | translate }}</p>
+    }
+  </div>
+</section>
+
+<section class="news-section">
+  <header>
+    <h2>{{ 'HOME.LATEST_NEWS' | translate }}</h2>
+  </header>
+  @if (newsError$ | async) {
+    <p class="error-banner" role="alert">{{ 'ERROR.GENERIC' | translate }}</p>
+  }
+  <app-news-grid [items]="news$ | async"></app-news-grid>
+</section>
+

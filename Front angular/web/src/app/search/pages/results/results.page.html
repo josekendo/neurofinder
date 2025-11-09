@@ -1,0 +1,55 @@
+<div class="results-layout">
+  <aside>
+    @if (filters$ | async; as filters) {
+      <app-filters-panel
+        [filters]="filters"
+        [dementiaOptions]="dementiaOptions"
+        [documentOptions]="documentOptions"
+        [languageOptions]="languageOptions"
+        (filtersChange)="onFiltersChange($event)"
+        (clear)="onClear()"
+      ></app-filters-panel>
+    }
+  </aside>
+
+  <main>
+    <header>
+      <div class="title-block">
+        <h1>{{ 'SEARCH.TITLE' | translate }}</h1>
+        @if (query$ | async; as query) {
+          <span class="query" *ngIf="query">“{{ query }}”</span>
+        }
+      </div>
+
+      <form class="results-search" [formGroup]="searchForm" (ngSubmit)="onSubmit()">
+        <mat-form-field appearance="outline">
+          <mat-label>{{ 'HOME.SEARCH_PLACEHOLDER' | translate }}</mat-label>
+          <input matInput formControlName="query">
+        </mat-form-field>
+        <button mat-flat-button color="primary" type="submit">
+          <mat-icon>search</mat-icon>
+          {{ 'HOME.SEARCH_BUTTON' | translate }}
+        </button>
+      </form>
+    </header>
+
+    @if (loading$ | async) {
+      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    }
+
+    @if (error$ | async; as errorKey) {
+      <div class="error-banner" role="alert">
+        {{ errorKey | translate }}
+      </div>
+    }
+
+    <div class="results-list">
+      @for (article of results$ | async; track article.id) {
+        <app-article-card [article]="article" (tagSelected)="onTag($event)"></app-article-card>
+      } @empty {
+        <p class="empty">{{ 'SEARCH.NO_RESULTS' | translate }}</p>
+      }
+    </div>
+  </main>
+</div>
+

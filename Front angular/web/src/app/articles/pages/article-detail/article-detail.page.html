@@ -1,0 +1,62 @@
+@if (error$ | async) {
+  <div class="error-banner" role="alert">{{ 'ERROR.GENERIC' | translate }}</div>
+} @else {
+  @if (article$ | async; as article) {
+    <article class="detail">
+      <header>
+        <h1>{{ article.title }}</h1>
+        <div class="meta">
+          <span>{{ 'DETAIL.PUBLISHED_AT' | translate }}: {{ article.publishedAt | date : 'mediumDate' }}</span>
+          <span>{{ 'DETAIL.PROCESSED_AT' | translate }}: {{ article.processedAt | date : 'medium' }}</span>
+          <span>Score: {{ article.score | number : '1.0-2' }}</span>
+        </div>
+        <div class="tags">
+          @for (tag of article.tags; track tag) {
+            <mat-chip>#{{ tag }}</mat-chip>
+          }
+        </div>
+        <a mat-stroked-button color="primary" [href]="article.originalUrl" target="_blank" rel="noopener">
+          <mat-icon>open_in_new</mat-icon>
+          {{ 'DETAIL.SOURCE_LINK' | translate }}
+        </a>
+      </header>
+
+      <section class="summary">
+        <h2>{{ 'DETAIL.SUMMARY' | translate }}</h2>
+        <p>{{ article.summary }}</p>
+      </section>
+
+      <section class="key-points">
+        <h3>{{ 'DETAIL.KEY_POINTS' | translate }}</h3>
+        <ul>
+          @for (point of article.keyPoints; track point) {
+            <li>{{ point }}</li>
+          }
+        </ul>
+      </section>
+
+      <section class="related">
+        <h3>{{ 'DETAIL.RELATED' | translate }}</h3>
+        <div class="related-grid">
+          @for (related of article.related; track related.id) {
+            <app-article-card [article]="related" [showActions]="true"></app-article-card>
+          }
+        </div>
+      </section>
+
+      <footer>
+        <button mat-stroked-button color="warn">
+          <mat-icon>flag</mat-icon>
+          {{ 'DETAIL.REPORT' | translate }}
+        </button>
+        <a mat-button routerLink="/search">
+          <mat-icon>arrow_back</mat-icon>
+          {{ 'NAV.SEARCH' | translate }}
+        </a>
+      </footer>
+    </article>
+  } @else {
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  }
+}
+

@@ -1,0 +1,45 @@
+<mat-toolbar color="primary" class="app-toolbar" role="navigation">
+  <button mat-button class="brand" routerLink="/">
+    <mat-icon>health_and_safety</mat-icon>
+    NeuroFinder
+  </button>
+  <span class="toolbar-spacer"></span>
+  <button mat-button routerLink="/news" routerLinkActive="active">
+    <mat-icon>article</mat-icon>
+    {{ 'NAV.NEWS' | translate }}
+  </button>
+  <button mat-button routerLink="/search" routerLinkActive="active">
+    <mat-icon>search</mat-icon>
+    {{ 'NAV.SEARCH' | translate }}
+  </button>
+  <mat-menu #langMenu="matMenu">
+    @for (lang of languages; track lang.code) {
+      <button mat-menu-item (click)="switchLanguage(lang.code)">
+        <span>{{ lang.label }}</span>
+        <span class="flag-right">{{ lang.flag }}</span>
+      </button>
+    }
+  </mat-menu>
+</mat-toolbar>
+
+<main class="app-shell">
+  <router-outlet />
+</main>
+
+<footer class="app-footer" aria-label="Información legal y enlaces relacionados">
+  <section>
+    <strong>© {{ ( 'FOOTER.YEAR' | translate ) }}</strong>
+    <span>{{ 'FOOTER.TAGLINE' | translate }}</span>
+  </section>
+  <section class="links">
+    <a routerLink="/search" routerLinkActive="active">{{ 'NAV.SEARCH' | translate }}</a>
+    <a routerLink="/news" routerLinkActive="active">{{ 'NAV.NEWS' | translate }}</a>
+    <a href="mailto:contacto&#64;neurofinder.org">contacto&#64;neurofinder.org</a>
+  </section>
+</footer>
+
+<div class="language-fab">
+  <button mat-fab color="primary" [matMenuTriggerFor]="langMenu" class="lang-trigger">
+    <mat-icon>language</mat-icon>
+  </button>
+</div>

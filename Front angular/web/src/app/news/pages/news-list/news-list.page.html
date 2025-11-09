@@ -1,0 +1,9 @@
+<section class="news-page">
+  <header>
+    <h1>{{ 'NEWS.TITLE' | translate }}</h1>
+    <p>{{ 'NEWS.DESCRIPTION' | translate }}</p>
+  </header>
+
+  <app-news-grid [items]="news$ | async"></app-news-grid>
+</section>
+

@@ -1,0 +1,103 @@
+{
+  "NAV": {
+    "NEWS": "Noticias",
+    "SEARCH": "Buscador",
+    "LANGUAGE": "Idioma"
+  },
+  "HOME": {
+    "TITLE": "NeuroFinder",
+    "SUBTITLE": "Buscador avanzado de alzhéimer",
+    "SEARCH_PLACEHOLDER": "Buscar por enfermedad, síntoma o publicación",
+    "SEARCH_BUTTON": "Buscar",
+    "METRICS_TITLE": "Cobertura en tiempo real",
+    "METRIC_SOURCES": "Fuentes indexadas",
+    "METRIC_ARTICLES": "Artículos analizados",
+    "METRIC_UPDATED": "Última actualización",
+    "LATEST_NEWS": "Últimas noticias"
+  },
+  "SEARCH": {
+    "TITLE": "Resultados",
+    "NO_RESULTS": "No se encontraron resultados para la búsqueda.",
+    "FILTERS": "Filtros",
+    "CLEAR": "Limpiar filtros",
+    "APPLY": "Aplicar filtros",
+    "SORT_BY": "Ordenar por",
+    "SCORE": "Puntuación de fiabilidad",
+    "DATE": "Fecha de publicación"
+  },
+  "DETAIL": {
+    "SUMMARY": "Resumen",
+    "PUBLISHED_AT": "Fecha de publicación",
+    "PROCESSED_AT": "Procesado el",
+    "SOURCE_LINK": "Ver fuente original",
+    "LABELS": "Etiquetas",
+    "RELATED": "Medios relacionados",
+    "KEY_POINTS": "Puntos clave",
+    "REPORT": "Reportar incidencia"
+  },
+  "NEWS": {
+    "TITLE": "Noticias verificadas automáticamente",
+    "DESCRIPTION": "Actualización semanal de novedades contrastadas mediante verificación automática con IA sobre demencias y trastornos neurocognitivos.",
+    "READ_MORE": "Leer más"
+  },
+  "FILTERS": {
+    "DEMENTIA_TYPE": "Tipo de demencia",
+    "DOCUMENT_TYPE": "Tipo de contenido",
+    "DATE_RANGE": "Rango de fechas",
+    "LANGUAGE": "Idioma",
+    "MIN_SCORE": "Puntuación mínima"
+  },
+  "DOCUMENT_TYPES": {
+    "article": "Artículo divulgativo",
+    "paper": "Artículo científico",
+    "clinical-report": "Informe clínico",
+    "news": "Noticia",
+    "guideline": "Guía o protocolo",
+    "dataset": "Conjunto de datos"
+  },
+  "LANGUAGES": {
+    "es": "Español",
+    "en": "Inglés",
+    "fr": "Francés",
+    "de": "Alemán"
+  },
+  "DEMENTIA_TYPES": {
+    "tnm.alzheimer": "Alzhéimer",
+    "tnm.alzheimer.early": "Alzhéimer de inicio precoz",
+    "tnm.alzheimer.late": "Alzhéimer de inicio tardío",
+    "tnm.alzheimer.mixed": "Alzhéimer con mezcla vascular",
+    "tnm.vascular": "Demencia vascular",
+    "tnm.lewy": "Cuerpos de Lewy",
+    "tnm.frontotemporal": "Frontotemporal",
+    "tnm.traumatic": "Por traumatismo craneoencefálico",
+    "tnm.substances": "Por sustancias o medicamentos",
+    "tnm.prions": "Por priones",
+    "tnm.parkinson": "Asociada a Parkinson",
+    "tnm.huntington": "Por enfermedad de Huntington",
+    "tnm.hiv": "Por infección de VIH",
+    "tnm.sclerosis": "Asociada a esclerosis múltiple",
+    "tnm.metabolic": "Metabólica o endócrina",
+    "tnm.epilepsy": "Por epilepsia prolongada",
+    "tnm.hydrocephalus": "Hidrocefalia normotensiva",
+    "tnm.nutritional": "Déficit nutricional",
+    "tnm.tumoral": "Tumores o neoplasias",
+    "tnm.repetitive_trauma": "Traumatismos repetitivos",
+    "tnm.hepatic_renal": "Insuficiencia hepática o renal",
+    "tnm.mixed": "Mixta o solapada",
+    "tnm.unspecified": "No especificada"
+  },
+  "FOOTER": {
+    "YEAR": "2025 NeuroFinder",
+    "TAGLINE": "Buscador avanzado de alzhéimer."
+  },
+  "ERROR": {
+    "GENERIC": "Opps parece que algo ha ido mal, inténtalo más tarde."
+  },
+  "TITLE": {
+    "HOME": "Inicio",
+    "SEARCH": "Resultados",
+    "ARTICLE": "Detalle",
+    "NEWS": "Noticias"
+  }
+}
+

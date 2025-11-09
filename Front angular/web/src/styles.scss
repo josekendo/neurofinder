@@ -1,0 +1,31 @@
+@import '@angular/material/prebuilt-themes/indigo-pink.css';
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  background-color: #f5f7fb;
+  color: #1f2933;
+}
+
+a {
+  color: #3949ab;
+}
+
+.mat-mdc-card {
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(15, 26, 42, 0.08);
+}
+
+.error-banner {
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+  margin: 8px 0 16px;
+  font-weight: 500;
+}

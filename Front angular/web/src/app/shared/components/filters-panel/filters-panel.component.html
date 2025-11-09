@@ -1,0 +1,59 @@
+<form class="filters-panel" [formGroup]="form" (ngSubmit)="apply()">
+  <header>
+    <h3>{{ 'SEARCH.FILTERS' | translate }}</h3>
+    <button mat-stroked-button type="button" (click)="clearFilters()">
+      <mat-icon>restart_alt</mat-icon>
+      {{ 'SEARCH.CLEAR' | translate }}
+    </button>
+  </header>
+
+  <section class="fields">
+    <mat-form-field appearance="outline">
+      <mat-label>{{ 'FILTERS.DEMENTIA_TYPE' | translate }}</mat-label>
+      <mat-select formControlName="dementiaTypes" multiple>
+        @for (option of dementiaOptions; track option) {
+          <mat-option [value]="option">{{ ('DEMENTIA_TYPES.' + option) | translate }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>{{ 'FILTERS.DOCUMENT_TYPE' | translate }}</mat-label>
+      <mat-select formControlName="documentTypes" multiple>
+        @for (option of documentOptions; track option) {
+          <mat-option [value]="option">{{ ('DOCUMENT_TYPES.' + option) | translate }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>{{ 'FILTERS.LANGUAGE' | translate }}</mat-label>
+      <mat-select formControlName="languages" multiple>
+        @for (option of languageOptions; track option) {
+          <mat-option [value]="option">{{ ('LANGUAGES.' + option) | translate }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>{{ 'FILTERS.MIN_SCORE' | translate }}</mat-label>
+      <input matInput type="number" formControlName="minScore" min="0" max="1" step="0.05">
+    </mat-form-field>
+
+    <div class="sort">
+      <span class="sort-label">{{ 'SEARCH.SORT_BY' | translate }}</span>
+      <mat-button-toggle-group formControlName="sortBy" exclusive>
+        <mat-button-toggle value="score">{{ 'SEARCH.SCORE' | translate }}</mat-button-toggle>
+        <mat-button-toggle value="date">{{ 'SEARCH.DATE' | translate }}</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+  </section>
+
+  <footer>
+    <button mat-flat-button color="primary" type="submit">
+      <mat-icon>filter_alt</mat-icon>
+      {{ 'SEARCH.APPLY' | translate }}
+    </button>
+  </footer>
+</form>
+

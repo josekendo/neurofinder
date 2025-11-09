@@ -1,0 +1,28 @@
+<section class="news-grid">
+  @if (items?.length) {
+    @for (item of items; track item.id) {
+      <mat-card appearance="outlined">
+        <mat-card-header>
+          <mat-card-title>{{ item.title }}</mat-card-title>
+          <mat-card-subtitle>{{ item.publishedAt | date : 'mediumDate' }}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <p>{{ item.summary }}</p>
+          <div class="tags">
+            @for (tag of item.tags; track tag) {
+              <mat-chip>#{{ tag }}</mat-chip>
+            }
+          </div>
+        </mat-card-content>
+        <mat-card-actions>
+          <a mat-button color="primary" [href]="item.url" target="_blank" rel="noopener">
+            {{ 'NEWS.READ_MORE' | translate }}
+          </a>
+        </mat-card-actions>
+      </mat-card>
+    }
+  } @else {
+    <p class="empty">{{ 'SEARCH.NO_RESULTS' | translate }}</p>
+  }
+</section>
+

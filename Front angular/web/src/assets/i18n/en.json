@@ -1,0 +1,103 @@
+{
+  "NAV": {
+    "NEWS": "News",
+    "SEARCH": "Search",
+    "LANGUAGE": "Language"
+  },
+  "HOME": {
+    "TITLE": "NeuroFinder",
+    "SUBTITLE": "Advanced Alzheimer search engine",
+    "SEARCH_PLACEHOLDER": "Search by condition, symptom or publication",
+    "SEARCH_BUTTON": "Search",
+    "METRICS_TITLE": "Live coverage",
+    "METRIC_SOURCES": "Indexed sources",
+    "METRIC_ARTICLES": "Analysed entries",
+    "METRIC_UPDATED": "Last update",
+    "LATEST_NEWS": "Latest news"
+  },
+  "SEARCH": {
+    "TITLE": "Results",
+    "NO_RESULTS": "No matches found for your query.",
+    "FILTERS": "Filters",
+    "CLEAR": "Clear filters",
+    "APPLY": "Apply filters",
+    "SORT_BY": "Sort by",
+    "SCORE": "Reliability score",
+    "DATE": "Publication date"
+  },
+  "DETAIL": {
+    "SUMMARY": "Summary",
+    "PUBLISHED_AT": "Published on",
+    "PROCESSED_AT": "Processed on",
+    "SOURCE_LINK": "Open original source",
+    "LABELS": "Tags",
+    "RELATED": "Related media",
+    "KEY_POINTS": "Key insights",
+    "REPORT": "Report issue"
+  },
+  "NEWS": {
+    "TITLE": "Automatically verified news",
+    "DESCRIPTION": "Weekly feed of updates automatically cross-checked with AI across our trusted dementia and neurocognitive sources.",
+    "READ_MORE": "Read more"
+  },
+  "FILTERS": {
+    "DEMENTIA_TYPE": "Dementia type",
+    "DOCUMENT_TYPE": "Content type",
+    "DATE_RANGE": "Date range",
+    "LANGUAGE": "Language",
+    "MIN_SCORE": "Minimum score"
+  },
+  "DOCUMENT_TYPES": {
+    "article": "Outreach article",
+    "paper": "Scientific paper",
+    "clinical-report": "Clinical report",
+    "news": "News item",
+    "guideline": "Guideline or protocol",
+    "dataset": "Dataset"
+  },
+  "LANGUAGES": {
+    "es": "Spanish",
+    "en": "English",
+    "fr": "French",
+    "de": "German"
+  },
+  "DEMENTIA_TYPES": {
+    "tnm.alzheimer": "Alzheimer’s disease",
+    "tnm.alzheimer.early": "Early-onset Alzheimer’s",
+    "tnm.alzheimer.late": "Late-onset Alzheimer’s",
+    "tnm.alzheimer.mixed": "Alzheimer’s with vascular overlap",
+    "tnm.vascular": "Vascular dementia",
+    "tnm.lewy": "Lewy body dementia",
+    "tnm.frontotemporal": "Frontotemporal dementia",
+    "tnm.traumatic": "Traumatic brain injury related",
+    "tnm.substances": "Substance or medication induced",
+    "tnm.prions": "Prion-related dementia",
+    "tnm.parkinson": "Associated with Parkinson’s",
+    "tnm.huntington": "Huntington’s disease related",
+    "tnm.hiv": "HIV-associated dementia",
+    "tnm.sclerosis": "Multiple sclerosis related",
+    "tnm.metabolic": "Metabolic or endocrine origin",
+    "tnm.epilepsy": "Prolonged epilepsy related",
+    "tnm.hydrocephalus": "Normal-pressure hydrocephalus",
+    "tnm.nutritional": "Nutritional deficiency related",
+    "tnm.tumoral": "Tumor or neoplasm related",
+    "tnm.repetitive_trauma": "Repetitive head trauma",
+    "tnm.hepatic_renal": "Hepatic or renal failure related",
+    "tnm.mixed": "Mixed or overlapping dementia",
+    "tnm.unspecified": "Unspecified dementia"
+  },
+  "FOOTER": {
+    "YEAR": "2025 NeuroFinder",
+    "TAGLINE": "Advanced Alzheimer search engine."
+  },
+  "ERROR": {
+    "GENERIC": "Oops, something went wrong. Please try again later."
+  },
+  "TITLE": {
+    "HOME": "Home",
+    "SEARCH": "Search",
+    "ARTICLE": "Article",
+    "NEWS": "News"
+  }
+}
+

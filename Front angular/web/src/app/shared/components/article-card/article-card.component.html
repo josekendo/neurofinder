@@ -1,0 +1,31 @@
+<mat-card appearance="outlined" class="article-card">
+  <mat-card-header>
+    <mat-card-title>{{ article.title }}</mat-card-title>
+    <mat-card-subtitle>
+      <span>{{ article.source }}</span>
+      <span class="dot">•</span>
+      <span>{{ article.publishedAt | date : 'mediumDate' }}</span>
+      <span class="dot">•</span>
+      <span>{{ article.score | number : '1.0-2' }}</span>
+    </mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+    <p class="excerpt">{{ article.excerpt }}</p>
+    <div class="tags">
+      @for (tag of article.tags; track tag) {
+        <mat-chip (click)="emitTag(tag)" class="clickable">#{{ tag }}</mat-chip>
+      }
+    </div>
+  </mat-card-content>
+
+  @if (showActions) {
+    <mat-card-actions>
+      <a mat-button color="primary" [routerLink]="['/articles', article.id]">
+        <mat-icon>open_in_new</mat-icon>
+        Detalles
+      </a>
+    </mat-card-actions>
+  }
+</mat-card>
+

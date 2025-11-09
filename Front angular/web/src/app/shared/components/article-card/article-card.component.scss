@@ -1,0 +1,43 @@
+.article-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  mat-card-header {
+    mat-card-title {
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
+    mat-card-subtitle {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: #475569;
+    }
+  }
+
+  .excerpt {
+    color: #1f2933;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+
+    .clickable {
+      cursor: pointer;
+    }
+  }
+
+  mat-card-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+

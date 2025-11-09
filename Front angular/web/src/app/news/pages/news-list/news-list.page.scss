@@ -1,0 +1,21 @@
+.news-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  header {
+    h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    p {
+      margin: 8px 0 0;
+      color: #475569;
+      max-width: 640px;
+    }
+  }
+}
+

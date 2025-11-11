@@ -1,44 +1,31 @@
 ## Frontend Angular (`web/`)
 
-Aplicación SPA desarrollada con Angular 18 y Angular Material, diseñada con enfoque responsive y criterios AA de accesibilidad. El despliegue final se realizará mediante `ng build --configuration=production` y subida manual por FTP a la infraestructura indicada por el tutor.
+Aplicación SPA desarrollada con Angular 18.2 y componentes standalone. Se apoya en Angular Material para los elementos de interfaz (inputs, botones, paneles) y sigue un enfoque responsive, pensado para consumo desde escritorio y tablet.
 
-El sitio público se sirve desde `neurofinder.org`, donde se alojan todas las rutas de la SPA y los recursos estáticos generados; las llamadas REST se dirigen a `https://neurofinder.org/api`.
+- **Arquitectura principal**:
+  - Routing basado en `app.routes.ts` con lazy loading por componente (`home`, `search`, `articles/:id`, `news`, `quienes-somos` y página 404).
+  - Módulo `core` con servicios singleton: `ApiService` (comunicación REST hacia `environment.apiUrl`) y `SeoService` (metadatos y Open Graph).
+  - Módulo `search` que concentra páginas, estado global y efectos relacionados con la búsqueda de artículos.
+  - Módulos `articles`, `news`, `about` y `errors` para el resto de vistas, cada uno organizado en carpetas `pages`.
+  - `shared` agrupa componentes reutilizables (`article-card`, `news-grid`, `filters-panel`, `metrics-banner`, etc.).
 
-### Despliegue en OVH
-- **Ruta frontend**: subir el contenido de `dist/web` al directorio `/www` para que las vistas queden en `https://neurofinder.org/`.
-- **Ruta backend**: la API mock se publica en `/www/api`; la SPA ya está configurada para consumir `https://neurofinder.org/api`.
-- **Variables necesarias**: en el hosting establecer `APP_PROFILE=mock` y `APP_BASE_PATH=api` para alinear el backend con la estructura `/www/api`.
-- **Reescrituras**: mantener el `.htaccess` del backend dentro de `/www/api/public` para que el router gestione todas las peticiones dinámicas.
+- **Gestión de estado**:
+  - NgRx (`@ngrx/store` + `@ngrx/effects`) mantiene el estado del buscador: `query`, filtros activos, resultados y estados de carga/errores.
+  - Los efectos coordinan las llamadas a `ApiService` y despachan acciones de éxito o fallo, reutilizando la última petición cuando se re-ejecuta la búsqueda sin cambios.
 
-### Estructura de módulos
-- `core`: servicios compartidos, guardas, interceptores y configuración de traducciones.
-- `search`: vistas y componentes relacionados con el buscador principal y los resultados.
-- `articles`: detalle de artículos/medios, lectura de resúmenes y navegación entre contenidos relacionados.
-- `news`: listado de novedades curadas y destacados semanales.
-- `shared`: componentes reutilizables (cards, chips de etiquetas, breadcrumbs, indicadores de fiabilidad).
+- **Internacionalización y SEO**:
+  - Se usa `@ngx-translate/core` con ficheros `assets/i18n/es.json` y `en.json`. El cambio de idioma se refleja en textos y etiquetas SEO.
+  - `SeoService` actualiza títulos, descripciones y metadatos sociales según la pantalla y el idioma activo.
 
-### Pantallas clave
-1. **Inicio (`/home`)**  
-   - Hero central con buscador semántico (input, botón buscar, sugerencias automáticas).  
-   - Bloque inferior con las 6 noticias más recientes mostradas en dos filas de tres cards, ordenadas cronológicamente.  
-   - Cintillo lateral con métricas en tiempo real (número de fuentes indexadas, última actualización).
+- **Integración con el backend**:
+  - Todas las peticiones REST apuntan a `https://neurofinder.org/api` (configurable por entorno).
+  - Los endpoints consumidos son: `POST /search`, `GET /articles/{id}`, `GET /news/latest` y `GET /metrics`.
 
-2. **Resultados (`/search`)**  
-   - Cabecera con enlaces útiles (guías DSM/CIE, soporte, documentación del proyecto).  
-   - Panel izquierdo con filtros dinámicos: tipo de demencia, tipo de documento, rango de fechas, idioma, puntuación mínima.  
-   - Sección derecha con tarjetas de resultados que muestran título, extracto, etiquetas y puntuación de fiabilidad.  
-   - Paginación infinita y posibilidad de guardar búsquedas (cuando el usuario está autenticado).
+- **Build y despliegue**:
+  - `npm install` + `npm run build` genera `dist/web` listo para servir como sitio estático.
+  - Para OVH o hosting similar basta con subir el contenido de `dist/web` al directorio público (`/www`). El backend mock se mantiene en `/www/api`.
 
-3. **Detalle de medio (`/articles/:id`)**  
-   - Información destacada: fecha de publicación, fecha de procesado, institución emisora y nivel de fiabilidad.  
-   - Resumen generado, puntos clave enumerados y listado de etiquetas taxonómicas.  
-   - Enlace claro a la fuente original, botón para reportar incidencias y módulo de medios relacionados (hasta 6, ordenados por similitud semántica).  
-   - Panel de “Contexto” con visualización de relaciones (grafo simplificado o chips enlazados).
-
-### Consideraciones adicionales
-- **Estado global**: uso de NgRx para gestionar búsquedas recientes, filtros activos y caché temporal de resultados.
-- **Internacionalización**: soporte inicial en español e inglés con `@ngx-translate/core`; arquitectura preparada para añadir más idiomas.
-- **Observabilidad**: integración con Azure Application Insights para trazabilidad de eventos y métricas de uso.
-- **Testing**: pruebas unitarias con Jest, end-to-end con Cypress (escenarios críticos: búsqueda, aplicación de filtros, visualización de un artículo).
-
-El proyecto incluye una guía de estilos (Figma) basada en diseño limpio y tipografía accesible, enfatizando claridad y jerarquía visual para usuarios no expertos.
+- **Otras consideraciones**:
+  - Estilos globales en `src/styles.scss` siguiendo variables CSS y tipografía accesible.
+  - La app aprovecha la detección de cambios `OnPush` en los componentes principales para mejorar rendimiento.
+  - Integración prevista con herramientas de analítica mediante `SeoService` y eventos de NgRx (pendiente de activar según políticas de datos).

@@ -1,34 +1,24 @@
 ## Backend PHP (`api/`)
 
-Este servicio proporciona la capa REST que consume el frontend y centraliza la lógica de negocio que no se delega en Azure Functions.
+Este servicio expone la API REST que consume el frontend y ofrece datos mock para validar la experiencia de usuario mientras se completa la integración con las fuentes reales.
 
-Todo el backend está desarrollado con PHP 8.2, garantizando compatibilidad con las librerías y estándares más recientes del ecosistema.
+- **Tecnología base**: PHP 8.2 puro, sin frameworks externos. Se utiliza un autoloader propio (`src/bootstrap.php`) y una clase `Application` que actúa como micro-router interno.
+- **Estructura**:
+  - `index.php` es el punto de entrada y únicamente instancia `NeuroFinder\Application`.
+  - `Application` gestiona cabeceras CORS, normaliza rutas, controla errores y delega en el proveedor de datos configurado.
+  - `Http\Response` centraliza la serialización JSON y los códigos HTTP (`ok`, `badRequest`, `notFound`, `serverError`, etc.).
+  - `Contracts/DataProviderInterface` define el contrato de acceso a datos; las implementaciones viven en `Profiles/`.
+- **Perfiles**:
+  - `mock` (por defecto) responde con datos estáticos representativos del dominio (artículos, noticias, métricas). Esta es la modalidad utilizada en el TFM.
+  - `active` reserva el contrato para la futura conexión con Azure Functions y un repositorio real; actualmente lanza una excepción controlada indicando que no está implementado.
+  - El perfil se selecciona mediante la variable de entorno `APP_PROFILE`. `APP_BASE_PATH` permite indicar el prefijo bajo el que se sirve la API (`/api`, por ejemplo).
+- **Endpoints disponibles**:
+  - `GET /health`: estado básico del servicio, perfil activo y sello temporal.
+  - `GET /metrics`: métricas agregadas mock (número de fuentes, artículos y fecha de actualización).
+  - `GET /news/latest`: colección de noticias recientes simuladas.
+  - `POST /search`: búsqueda en los mocks de artículos con filtros por tipo de demencia, idioma, score, rango de fechas y ordenación.
+  - `GET /articles/{id}`: detalle ampliado de un artículo, con resumen, puntos clave y relacionados.
+- **Documentación**: `openapi.yaml` describe la API completa (peticiones, respuestas y esquemas) y sirve de base para generar clientes o importar la colección en Postman.
+- **Despliegue**: basta con publicar la carpeta `api/` en el entorno objetivo y definir las variables de entorno necesarias. El router interno detecta el directorio base y aplica los rewrites sin depender de `.htaccess`.
 
-La exposición pública del backend se realiza bajo el dominio `neurofinder.org`, asegurando un punto único de acceso para clientes internos y externos.
-
-- **Perfiles ejecutables**:
-  - `mock` (por defecto): responde con datos sintéticos alineados con los mocks históricos del frontend (`/search`, `/articles/{id}`, `/news/latest`, `/metrics`).
-  - `active`: reservado para la integración real con bases de datos y Azure Functions. Todavía no está implementado y devuelve un error controlado.
-  - El perfil se selecciona mediante la variable de entorno `APP_PROFILE`.
-- **Estructura de despliegue**:
-  - Todo lo necesario para publicar el backend está contenido en la carpeta `api/` (subirla tal cual a `/www/api`): `index.php`, `.htaccess`, `src/` y `openapi.yaml`.
-  - Desplegado en OVH dentro de `/www/api`, se debe definir `APP_PROFILE=mock` y `APP_BASE_PATH=api` para que el router recorte el prefijo y atienda las rutas bajo `https://neurofinder.org/api/*`.
-  - Si la variable `APP_BASE_PATH` no está presente, el router detecta automáticamente el directorio del script (`dirname($_SERVER['SCRIPT_NAME'])`).
-  - El `.htaccess` incluido redirige todas las peticiones no estáticas a `index.php`, imprescindible para los rewrites en OVH.
-- **Framework**: implementación ligera propia en PHP 8.2 (router minimalista sin dependencias externas). Pensado para evolucionar a SlimPHP 4 cuando se integre con los servicios activos.
-- **Responsabilidades principales**:
-  - Exponer endpoints `POST /search`, `GET /articles/{id}`, `GET /news/latest` y `GET /metrics`.
-  - Orquestar peticiones hacia las Azure Functions de recopilación, procesamiento y evaluación mediante colas y webhooks.
-  - Gestionar el almacenamiento relacional (MySQL/Aurora) para metadatos, usuarios y registros de auditoría.
-  - Administrar los tokens de acceso a la base vectorial (Azure Cognitive Search o alternativa compatible con embeddings).
-- **Integración con embeddings**:
-  - Mantiene un cliente HTTP para consultas semánticas; recibe los vectores desde Azure Functions y ejecuta el ranking final.
-  - Ofrece un endpoint interno (`/internal/embeddings/sync`) para refrescar cachés locales tras cada nueva ingesta.
-- **Seguridad**:
-  - Autenticación mediante JWT (usuarios registrados) y API keys (servicios internos).
-  - Rate limiting por IP y validación de origen CORS.
-- **Observabilidad**:
-  - Registro estructurado con Monolog + Azure Application Insights.
-  - Métricas expuestas en `/metrics` (formato Prometheus) para latencia y errores.
-
-El despliegue se realiza en un contenedor Docker hosteado en Azure App Service. Se definen pipelines de CI/CD que ejecutan pruebas unitarias (PHPUnit) y de contrato (Pact).
+En resumen, se trata de un backend minimalista diseñado para ser sencillo de desplegar y mantener, que ya expone el contrato REST definitivo y permite evolucionar de datos simulados a datos reales sin reescribir la capa HTTP.

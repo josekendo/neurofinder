@@ -79,6 +79,74 @@ function getDbConnection(array $config): ?PDO {
     }
 }
 
+// Función para actualizar estadísticas de la base de datos
+// Todas las estadísticas se calculan contando directamente desde la BD
+function actualizarEstadisticas(PDO $pdo, bool $isCli): array {
+    try {
+        // Contar items totales directamente desde la BD (artículos + noticias)
+        $stmt = $pdo->query("SELECT COUNT(*) as total FROM items");
+        $result = $stmt->fetch();
+        $totalItemsBD = (int)($result['total'] ?? 0);
+        
+        // Contar fuentes únicas directamente desde la BD 
+        // (solo de artículos, donde source no es NULL ni vacío)
+        $stmt = $pdo->query("SELECT COUNT(DISTINCT source) as total FROM items WHERE source IS NOT NULL AND source != ''");
+        $result = $stmt->fetch();
+        $totalFuentes = (int)($result['total'] ?? 0);
+        
+        // Contar artículos procesados directamente desde la BD 
+        // (items con tipo 'article' o 'news')
+        $stmt = $pdo->query("SELECT COUNT(*) as total FROM items WHERE tipo IN ('article', 'news')");
+        $result = $stmt->fetch();
+        $totalArticulos = (int)($result['total'] ?? 0);
+        
+        // Actualizar tabla estadisticas
+        // Usamos VALUES() en ON DUPLICATE KEY UPDATE para evitar problemas con parámetros duplicados
+        $sqlUpdate = "INSERT INTO estadisticas (id, sources, articles, updated_at) 
+                      VALUES (1, :sources, :articles, NOW())
+                      ON DUPLICATE KEY UPDATE 
+                          sources = VALUES(sources),
+                          articles = VALUES(articles),
+                          updated_at = NOW()";
+        
+        $stmt = $pdo->prepare($sqlUpdate);
+        $stmt->execute([
+            ':sources' => $totalFuentes,
+            ':articles' => $totalArticulos
+        ]);
+        
+        writeOutput("[" . date('Y-m-d H:i:s') . "] ✓ Estadísticas actualizadas en la base de datos.\n", $isCli);
+        
+        // Retornar valores para mostrar en el resultado final
+        return [$totalItemsBD, $totalFuentes, $totalArticulos];
+        
+    } catch (Exception $e) {
+        writeOutput("[" . date('Y-m-d H:i:s') . "] ⚠ Error al actualizar estadísticas: " . $e->getMessage() . "\n", $isCli);
+        return [0, 0, 0];
+    }
+}
+
+// Función para validar y formatear fecha
+function validarFecha(string $fecha): ?string {
+    // Intentar parsear la fecha en varios formatos comunes
+    $formatos = ['Y-m-d', 'Y-m-d H:i:s', 'Y/m/d', 'd/m/Y', 'Y-m-d\TH:i:s\Z'];
+    
+    foreach ($formatos as $formato) {
+        $fechaObj = DateTime::createFromFormat($formato, $fecha);
+        if ($fechaObj !== false) {
+            return $fechaObj->format('Y-m-d');
+        }
+    }
+    
+    // Si es un timestamp, convertir a fecha
+    if (is_numeric($fecha)) {
+        $fechaObj = new DateTime('@' . $fecha);
+        return $fechaObj->format('Y-m-d');
+    }
+    
+    return null;
+}
+
 // Función para insertar/actualizar un item en la BD
 function guardarItem(PDO $pdo, array $item, bool $isCli): bool {
     try {
@@ -86,13 +154,21 @@ function guardarItem(PDO $pdo, array $item, bool $isCli): bool {
         $url = substr($item['url'] ?? '', 0, 767); // Límite de BD
         $tipo = in_array($item['tipo'] ?? '', ['article', 'news'], true) ? $item['tipo'] : 'article';
         $title = substr($item['title'] ?? '', 0, 500);
-        $published_at = $item['published_at'] ?? date('Y-m-d');
+        $published_at_raw = $item['published_at'] ?? date('Y-m-d');
         $tags = is_array($item['tags'] ?? null) ? json_encode($item['tags'], JSON_UNESCAPED_UNICODE) : json_encode([], JSON_UNESCAPED_UNICODE);
         $summary = $item['summary'] ?? '';
         
+        // Validar y formatear fecha
+        $published_at = validarFecha($published_at_raw);
+        if ($published_at === null) {
+            // Si no se puede validar, intentar usar la fecha actual como fallback
+            $published_at = date('Y-m-d');
+            writeOutput("  ⚠ Item con URL '{$url}': fecha inválida '{$published_at_raw}', usando fecha actual\n", $isCli);
+        }
+        
         // Validar campos requeridos
-        if (empty($url) || empty($title) || empty($published_at)) {
-            writeOutput("  ⚠ Item omitido: faltan campos requeridos (URL, título o fecha)\n", $isCli);
+        if (empty($url) || empty($title)) {
+            writeOutput("  ⚠ Item omitido: faltan campos requeridos (URL o título)\n", $isCli);
             return false;
         }
         
@@ -105,9 +181,28 @@ function guardarItem(PDO $pdo, array $item, bool $isCli): bool {
         $key_points = null;
         
         if ($tipo === 'article') {
-            $excerpt = !empty($item['excerpt']) ? substr($item['excerpt'], 0, 500) : null;
-            $processed_at = $item['processed_at'] ?? null;
-            $score = isset($item['score']) && $item['score'] !== null ? (float)$item['score'] : null;
+            // excerpt es TEXT en BD, no hay límite estricto, pero limitamos a un tamaño razonable
+            $excerpt = !empty($item['excerpt']) ? $item['excerpt'] : null;
+            if ($excerpt !== null && strlen($excerpt) > 65535) { // Límite aproximado de TEXT
+                $excerpt = substr($excerpt, 0, 65535);
+            }
+            
+            // Validar fecha de procesamiento
+            $processed_at_raw = $item['processed_at'] ?? null;
+            if ($processed_at_raw !== null) {
+                $processed_at = validarFecha($processed_at_raw);
+                if ($processed_at === null) {
+                    $processed_at = null; // Si no es válida, dejamos null
+                }
+            }
+            
+            // Validar score (debe estar entre 0 y 1, o ser null)
+            if (isset($item['score']) && $item['score'] !== null) {
+                $score = (float)$item['score'];
+                if ($score < 0) $score = 0;
+                if ($score > 1) $score = 1;
+            }
+            
             $source = !empty($item['source']) ? substr($item['source'], 0, 255) : null;
             $language = !empty($item['language']) ? substr($item['language'], 0, 10) : null;
             $key_points = is_array($item['key_points'] ?? null) ? json_encode($item['key_points'], JSON_UNESCAPED_UNICODE) : null;
@@ -117,6 +212,11 @@ function guardarItem(PDO $pdo, array $item, bool $isCli): bool {
         $image_url = null;
         if ($tipo === 'news') {
             $image_url = !empty($item['image_url']) ? substr($item['image_url'], 0, 1000) : null;
+        }
+        
+        // Validar summary (es TEXT en BD, no hay límite estricto)
+        if (strlen($summary) > 65535) { // Límite aproximado de TEXT
+            $summary = substr($summary, 0, 65535);
         }
         
         // Usar INSERT ... ON DUPLICATE KEY UPDATE para manejar duplicados
@@ -163,10 +263,12 @@ function guardarItem(PDO $pdo, array $item, bool $isCli): bool {
         return true;
         
     } catch (PDOException $e) {
-        writeOutput("  ❌ Error al guardar item: " . $e->getMessage() . "\n", $isCli);
+        $urlItem = substr($item['url'] ?? 'desconocida', 0, 100);
+        writeOutput("  ❌ Error al guardar item (URL: {$urlItem}): " . $e->getMessage() . "\n", $isCli);
         return false;
     } catch (Exception $e) {
-        writeOutput("  ❌ Error: " . $e->getMessage() . "\n", $isCli);
+        $urlItem = substr($item['url'] ?? 'desconocida', 0, 100);
+        writeOutput("  ❌ Error al procesar item (URL: {$urlItem}): " . $e->getMessage() . "\n", $isCli);
         return false;
     }
 }
@@ -181,6 +283,8 @@ $startTime = time();
 $url = $config['AZURE_PROCESS_URL'];
 $maxExecutionTime = 600; // 10 minutos
 
+writeOutput("[" . date('Y-m-d H:i:s') . "] Realizando petición GET a: {$url}\n", $isCli);
+
 if (function_exists('curl_init')) {
     $ch = curl_init($url);
     curl_setopt_array($ch, [
@@ -189,20 +293,25 @@ if (function_exists('curl_init')) {
         CURLOPT_CONNECTTIMEOUT => 30,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_MAXREDIRS => 5,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
     ]);
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError = curl_error($ch);
+    $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
     curl_close($ch);
     
     if ($response === false) {
-        $error = "Error cURL: {$curlError}\n";
+        $error = "[" . date('Y-m-d H:i:s') . "] ❌ Error cURL: {$curlError}\n";
         writeOutput($error, $isCli);
         exit(1);
     }
     
+    writeOutput("[" . date('Y-m-d H:i:s') . "] Respuesta recibida - HTTP {$httpCode}, Content-Type: " . ($contentType ?: 'desconocido') . "\n", $isCli);
+    
     if ($httpCode !== 200) {
-        $error = "Error HTTP {$httpCode}: {$response}\n";
+        $error = "[" . date('Y-m-d H:i:s') . "] ❌ Error HTTP {$httpCode}: " . substr($response, 0, 500) . "\n";
         writeOutput($error, $isCli);
         exit(1);
     }
@@ -214,15 +323,18 @@ if (function_exists('curl_init')) {
             'ignore_errors' => true,
             'follow_location' => true,
             'max_redirects' => 5,
+            'user_agent' => 'PHP Process Script/1.0',
         ],
     ]);
     $response = @file_get_contents($url, false, $context);
     
     if ($response === false) {
-        $error = "Error al realizar la petición HTTP\n";
+        $error = "[" . date('Y-m-d H:i:s') . "] ❌ Error al realizar la petición HTTP con file_get_contents\n";
         writeOutput($error, $isCli);
         exit(1);
     }
+    
+    writeOutput("[" . date('Y-m-d H:i:s') . "] Respuesta recibida correctamente\n", $isCli);
 }
 
 // Parsear respuesta JSON
@@ -232,6 +344,17 @@ if (json_last_error() !== JSON_ERROR_NONE) {
     writeOutput($error, $isCli);
     writeOutput("Respuesta recibida: " . substr($response, 0, 500) . "...\n", $isCli);
     exit(1);
+}
+
+// Verificar si hay un error en la respuesta de Azure
+if (isset($data['error'])) {
+    $error = "Error en la respuesta de Azure: " . $data['error'] . "\n";
+    writeOutput($error, $isCli);
+    // Continuar procesando si hay items, pero advertir del error
+    if (!isset($data['items']) || !is_array($data['items']) || empty($data['items'])) {
+        exit(1);
+    }
+    writeOutput("⚠ Advertencia: Se detectó un error pero se continuará procesando los items disponibles.\n", $isCli);
 }
 
 // Verificar que hay items
@@ -247,12 +370,7 @@ $totalItems = count($items);
 writeOutput("\n[" . date('Y-m-d H:i:s') . "] Items recibidos: {$totalItems}\n", $isCli);
 writeOutput("[" . date('Y-m-d H:i:s') . "] Archivos procesados: " . ($data['archivos_procesados'] ?? 0) . "\n", $isCli);
 
-if ($totalItems === 0) {
-    writeOutput("[" . date('Y-m-d H:i:s') . "] No hay items para procesar.\n", $isCli);
-    exit(0);
-}
-
-// Conectar a la base de datos
+// Conectar a la base de datos (necesario incluso si no hay items para actualizar estadísticas)
 try {
     $pdo = getDbConnection($config);
     writeOutput("[" . date('Y-m-d H:i:s') . "] Conectado a la base de datos.\n", $isCli);
@@ -260,6 +378,30 @@ try {
     $error = "Error al conectar a la base de datos: " . $e->getMessage() . "\n";
     writeOutput($error, $isCli);
     exit(1);
+}
+
+if ($totalItems === 0) {
+    writeOutput("[" . date('Y-m-d H:i:s') . "] No hay items para procesar.\n", $isCli);
+    
+    // Actualizar estadísticas incluso si no hay items nuevos
+    writeOutput("[" . date('Y-m-d H:i:s') . "] Actualizando estadísticas...\n", $isCli);
+    [$totalItemsBD, $totalFuentes, $totalArticulos] = actualizarEstadisticas($pdo, $isCli);
+    
+    $endTime = time();
+    $elapsed = $endTime - $startTime;
+    
+    writeOutput("\n", $isCli);
+    writeOutput("[" . date('Y-m-d H:i:s') . "] ========== RESULTADO ==========\n", $isCli);
+    writeOutput("[" . date('Y-m-d H:i:s') . "] Items procesados en esta ejecución: 0\n", $isCli);
+    writeOutput("\n", $isCli);
+    writeOutput("[" . date('Y-m-d H:i:s') . "] ========== ESTADÍSTICAS DE LA BASE DE DATOS ==========\n", $isCli);
+    writeOutput("[" . date('Y-m-d H:i:s') . "] Items totales en BD: {$totalItemsBD}\n", $isCli);
+    writeOutput("[" . date('Y-m-d H:i:s') . "] Fuentes únicas: {$totalFuentes}\n", $isCli);
+    writeOutput("[" . date('Y-m-d H:i:s') . "] Artículos totales: {$totalArticulos}\n", $isCli);
+    writeOutput("[" . date('Y-m-d H:i:s') . "] Tiempo transcurrido: " . intval($elapsed / 60) . ":" . sprintf("%02d", $elapsed % 60) . "\n", $isCli);
+    writeOutput("[" . date('Y-m-d H:i:s') . "] ===============================\n", $isCli);
+    
+    exit(0);
 }
 
 // Guardar items en la base de datos
@@ -293,8 +435,33 @@ try {
     $pdo->rollBack();
     $error = "Error en la transacción: " . $e->getMessage() . "\n";
     writeOutput($error, $isCli);
+    
+    // Actualizar estadísticas incluso si hubo error en la transacción
+    writeOutput("[" . date('Y-m-d H:i:s') . "] Actualizando estadísticas después del error...\n", $isCli);
+    [$totalItemsBD, $totalFuentes, $totalArticulos] = actualizarEstadisticas($pdo, $isCli);
+    
+    $endTime = time();
+    $elapsed = $endTime - $startTime;
+    
+    writeOutput("\n", $isCli);
+    writeOutput("[" . date('Y-m-d H:i:s') . "] ========== RESULTADO (CON ERRORES) ==========\n", $isCli);
+    writeOutput("[" . date('Y-m-d H:i:s') . "] Items procesados en esta ejecución: {$totalItems}\n", $isCli);
+    writeOutput("[" . date('Y-m-d H:i:s') . "] Items guardados exitosamente: {$exitosos}\n", $isCli);
+    writeOutput("[" . date('Y-m-d H:i:s') . "] Items fallidos: {$fallidos}\n", $isCli);
+    writeOutput("\n", $isCli);
+    writeOutput("[" . date('Y-m-d H:i:s') . "] ========== ESTADÍSTICAS DE LA BASE DE DATOS ==========\n", $isCli);
+    writeOutput("[" . date('Y-m-d H:i:s') . "] Items totales en BD: {$totalItemsBD}\n", $isCli);
+    writeOutput("[" . date('Y-m-d H:i:s') . "] Fuentes únicas: {$totalFuentes}\n", $isCli);
+    writeOutput("[" . date('Y-m-d H:i:s') . "] Artículos totales: {$totalArticulos}\n", $isCli);
+    writeOutput("[" . date('Y-m-d H:i:s') . "] Tiempo transcurrido: " . intval($elapsed / 60) . ":" . sprintf("%02d", $elapsed % 60) . "\n", $isCli);
+    writeOutput("[" . date('Y-m-d H:i:s') . "] ===============================\n", $isCli);
+    
     exit(1);
 }
+
+// Actualizar estadísticas de la base de datos
+writeOutput("[" . date('Y-m-d H:i:s') . "] Actualizando estadísticas...\n", $isCli);
+[$totalItemsBD, $totalFuentes, $totalArticulos] = actualizarEstadisticas($pdo, $isCli);
 
 $endTime = time();
 $elapsed = $endTime - $startTime;
@@ -302,9 +469,14 @@ $elapsed = $endTime - $startTime;
 // Mostrar resultado final
 writeOutput("\n", $isCli);
 writeOutput("[" . date('Y-m-d H:i:s') . "] ========== RESULTADO ==========\n", $isCli);
-writeOutput("[" . date('Y-m-d H:i:s') . "] Items procesados: {$totalItems}\n", $isCli);
+writeOutput("[" . date('Y-m-d H:i:s') . "] Items procesados en esta ejecución: {$totalItems}\n", $isCli);
 writeOutput("[" . date('Y-m-d H:i:s') . "] Items guardados exitosamente: {$exitosos}\n", $isCli);
 writeOutput("[" . date('Y-m-d H:i:s') . "] Items fallidos: {$fallidos}\n", $isCli);
+writeOutput("\n", $isCli);
+writeOutput("[" . date('Y-m-d H:i:s') . "] ========== ESTADÍSTICAS DE LA BASE DE DATOS ==========\n", $isCli);
+writeOutput("[" . date('Y-m-d H:i:s') . "] Items totales en BD: {$totalItemsBD}\n", $isCli);
+writeOutput("[" . date('Y-m-d H:i:s') . "] Fuentes únicas: {$totalFuentes}\n", $isCli);
+writeOutput("[" . date('Y-m-d H:i:s') . "] Artículos totales: {$totalArticulos}\n", $isCli);
 writeOutput("[" . date('Y-m-d H:i:s') . "] Tiempo transcurrido: " . intval($elapsed / 60) . ":" . sprintf("%02d", $elapsed % 60) . "\n", $isCli);
 writeOutput("[" . date('Y-m-d H:i:s') . "] ===============================\n", $isCli);
 

@@ -49,28 +49,7 @@ final class Application
     private function dispatch(string $method, string $path): Response
     {
         if ($method === 'GET' && $path === '/health') {
-            $configFile = __DIR__ . '/../config.php';
-            $configExists = file_exists($configFile);
-            $config = $configExists ? require $configFile : [];
-            
-            $debug = [
-                'status' => 'ok',
-                'profile' => $this->profile,
-                'timestamp' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
-                'debug' => [
-                    'apache_getenv_available' => function_exists('apache_getenv'),
-                    'apache_getenv_APP_PROFILE' => function_exists('apache_getenv') ? apache_getenv('APP_PROFILE') : 'N/A',
-                    '_SERVER_APP_PROFILE' => $_SERVER['APP_PROFILE'] ?? 'NOT_SET',
-                    'getenv_APP_PROFILE' => getenv('APP_PROFILE') ?: 'NOT_SET',
-                    'getEnvVar_result' => $this->getEnvVar('APP_PROFILE'),
-                    'config_file_exists' => $configExists,
-                    'config_file_path' => $configFile,
-                    'config_APP_PROFILE' => $config['APP_PROFILE'] ?? 'NOT_SET',
-                    'all_SERVER_vars_with_APP' => array_filter($_SERVER, fn($k) => str_starts_with($k, 'APP_'), ARRAY_FILTER_USE_KEY),
-                    'all_SERVER_vars_with_DB' => array_filter($_SERVER, fn($k) => str_starts_with($k, 'DB_'), ARRAY_FILTER_USE_KEY),
-                ]
-            ];
-            return Response::ok($debug);
+            return $this->handleHealth();
         }
 
         if ($method === 'GET' && $path === '/metrics') {
@@ -211,6 +190,120 @@ final class Application
         }
 
         return false;
+    }
+
+    private function handleHealth(): Response
+    {
+        $profile = $this->profile;
+        $timestamp = (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM);
+        
+        // Verificar conexión a base de datos
+        $dbStatus = $this->checkDatabaseConnection();
+        
+        // Verificar servicios
+        $servicesStatus = $this->checkServices();
+        
+        // Determinar estado general
+        $overallStatus = 'ok';
+        if ($dbStatus['status'] === 'error' && $profile === 'active') {
+            $overallStatus = 'degraded';
+        } elseif ($dbStatus['status'] === 'error' || $servicesStatus['status'] === 'error') {
+            $overallStatus = 'warning';
+        }
+        
+        return Response::ok([
+            'status' => $overallStatus,
+            'profile' => $profile,
+            'timestamp' => $timestamp,
+            'database' => $dbStatus,
+            'services' => $servicesStatus
+        ]);
+    }
+
+    private function checkDatabaseConnection(): array
+    {
+        $host = $this->getEnvVar('DB_HOST') ?: 'localhost';
+        $port = (int)($this->getEnvVar('DB_PORT') ?: 3306);
+        $database = $this->getEnvVar('DB_DATABASE') ?: '';
+        $username = $this->getEnvVar('DB_USERNAME') ?: '';
+        $password = $this->getEnvVar('DB_PASSWORD') ?: '';
+
+        // Si no hay configuración de BD, no es necesario en modo mock
+        if ($database === '' || $username === '') {
+            return [
+                'status' => 'not_configured',
+                'message' => 'Base de datos no configurada (no requerida en modo mock)',
+                'configured' => false
+            ];
+        }
+
+        try {
+            $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $host, $port, $database);
+            $pdo = new \PDO($dsn, $username, $password, [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                \PDO::ATTR_TIMEOUT => 2,
+            ]);
+
+            // Intentar una consulta simple para verificar la conexión
+            $stmt = $pdo->query('SELECT 1');
+            $stmt->fetch();
+
+            return [
+                'status' => 'ok',
+                'message' => 'Conexión a base de datos exitosa',
+                'configured' => true,
+                'host' => $host,
+                'port' => $port,
+                'database' => $database
+            ];
+        } catch (\PDOException $e) {
+            return [
+                'status' => 'error',
+                'message' => 'Error al conectar con la base de datos: ' . $e->getMessage(),
+                'configured' => true,
+                'host' => $host,
+                'port' => $port,
+                'database' => $database
+            ];
+        } catch (\Exception $e) {
+            return [
+                'status' => 'error',
+                'message' => 'Error inesperado: ' . $e->getMessage(),
+                'configured' => true
+            ];
+        }
+    }
+
+    private function checkServices(): array
+    {
+        $services = [];
+        $overallStatus = 'ok';
+
+        // Verificar servicio de correo (mail)
+        $mailAvailable = function_exists('mail');
+        $services['mail'] = [
+            'status' => $mailAvailable ? 'ok' : 'error',
+            'message' => $mailAvailable ? 'Servicio de correo disponible' : 'Servicio de correo no disponible',
+            'available' => $mailAvailable
+        ];
+        
+        if (!$mailAvailable) {
+            $overallStatus = 'warning';
+        }
+
+        // Verificar que PHP esté funcionando correctamente
+        $phpVersion = phpversion();
+        $services['php'] = [
+            'status' => 'ok',
+            'message' => 'PHP funcionando correctamente',
+            'version' => $phpVersion,
+            'available' => true
+        ];
+
+        return [
+            'status' => $overallStatus,
+            'services' => $services
+        ];
     }
 
     private function handleReport(): Response

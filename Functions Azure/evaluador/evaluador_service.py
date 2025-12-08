@@ -27,7 +27,7 @@ class EvaluadorService:
         # Configuración de Azure OpenAI
         self.azure_openai_endpoint = os.getenv('AZURE_OPENAI_ENDPOINT', '').strip().strip('"').strip("'")
         self.azure_openai_api_key = os.getenv('AZURE_OPENAI_API_KEY', '').strip().strip('"').strip("'")
-        self.azure_openai_api_version = os.getenv('AZURE_OPENAI_API_VERSION', '2023-05-15')
+        self.azure_openai_api_version = os.getenv('AZURE_OPENAI_EMBEDDING_API_VERSION', '2023-05-15')
         self.azure_openai_embedding_deployment = os.getenv('AZURE_OPENAI_EMBEDDING_DEPLOYMENT', 'text-embedding-ada-002')
         
         # Configuración de Azure Storage

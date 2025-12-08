@@ -19,7 +19,7 @@ final class Application
         ?DataProviderInterface $provider = null,
         ?string $basePath = null
     ) {
-        $this->profile = $profile ?? getenv('APP_PROFILE') ?: 'mock';
+        $this->profile = $profile ?? $this->getEnvVar('APP_PROFILE') ?: 'mock';
         $this->basePath = $basePath ?? $this->detectBasePath();
         $this->provider = $provider ?? $this->resolveProvider($this->profile);
     }
@@ -49,11 +49,28 @@ final class Application
     private function dispatch(string $method, string $path): Response
     {
         if ($method === 'GET' && $path === '/health') {
-            return Response::ok([
+            $configFile = __DIR__ . '/../config.php';
+            $configExists = file_exists($configFile);
+            $config = $configExists ? require $configFile : [];
+            
+            $debug = [
                 'status' => 'ok',
                 'profile' => $this->profile,
-                'timestamp' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM)
-            ]);
+                'timestamp' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+                'debug' => [
+                    'apache_getenv_available' => function_exists('apache_getenv'),
+                    'apache_getenv_APP_PROFILE' => function_exists('apache_getenv') ? apache_getenv('APP_PROFILE') : 'N/A',
+                    '_SERVER_APP_PROFILE' => $_SERVER['APP_PROFILE'] ?? 'NOT_SET',
+                    'getenv_APP_PROFILE' => getenv('APP_PROFILE') ?: 'NOT_SET',
+                    'getEnvVar_result' => $this->getEnvVar('APP_PROFILE'),
+                    'config_file_exists' => $configExists,
+                    'config_file_path' => $configFile,
+                    'config_APP_PROFILE' => $config['APP_PROFILE'] ?? 'NOT_SET',
+                    'all_SERVER_vars_with_APP' => array_filter($_SERVER, fn($k) => str_starts_with($k, 'APP_'), ARRAY_FILTER_USE_KEY),
+                    'all_SERVER_vars_with_DB' => array_filter($_SERVER, fn($k) => str_starts_with($k, 'DB_'), ARRAY_FILTER_USE_KEY),
+                ]
+            ];
+            return Response::ok($debug);
         }
 
         if ($method === 'GET' && $path === '/metrics') {
@@ -130,7 +147,7 @@ final class Application
 
     private function detectBasePath(): string
     {
-        $envBasePath = getenv('APP_BASE_PATH');
+        $envBasePath = $this->getEnvVar('APP_BASE_PATH');
         if (is_string($envBasePath) && $envBasePath !== '') {
             return '/' . trim($envBasePath, '/');
         }
@@ -147,6 +164,49 @@ final class Application
         }
 
         return $directory === '' ? '' : '/' . ltrim($directory, '/');
+    }
+
+    /**
+     * Obtiene una variable de entorno, intentando múltiples métodos en orden de prioridad.
+     * Compatible con SetEnv de Apache .htaccess y archivo de configuración PHP como fallback
+     */
+    private function getEnvVar(string $name): string|false
+    {
+        // 1. Intentar apache_getenv() (solo disponible cuando PHP es módulo de Apache)
+        if (function_exists('apache_getenv')) {
+            $value = apache_getenv($name);
+            if ($value !== false) {
+                return $value;
+            }
+        }
+
+        // 2. Intentar $_SERVER (donde Apache SetEnv normalmente coloca las variables)
+        if (isset($_SERVER[$name]) && $_SERVER[$name] !== '') {
+            return $_SERVER[$name];
+        }
+
+        // 3. Intentar getenv() como fallback
+        $value = getenv($name);
+        if ($value !== false) {
+            return $value;
+        }
+
+        // 4. Intentar leer del archivo de configuración PHP (fallback cuando SetEnv no funciona)
+        static $config = null;
+        if ($config === null) {
+            $configFile = __DIR__ . '/../config.php';
+            if (file_exists($configFile)) {
+                $config = require $configFile;
+            } else {
+                $config = [];
+            }
+        }
+
+        if (isset($config[$name])) {
+            return (string)$config[$name];
+        }
+
+        return false;
     }
 }
 

@@ -8,3 +8,5 @@ openai
 requests
 biopython
 python-dotenv
+faiss-cpu
+numpy

@@ -1,0 +1,227 @@
+"""
+Servicio procesador que lee archivos JSON del storage y los compacta en una única respuesta.
+Lee todos los archivos que NO tengan "ok" en el nombre.
+"""
+
+import os
+import json
+import logging
+from typing import List, Dict
+from azure.storage.blob import BlobServiceClient
+from azure.core.exceptions import AzureError
+
+
+class ProcesadorService:
+    """Servicio para procesar archivos JSON del storage"""
+    
+    def __init__(self):
+        """Inicializar servicio con configuración desde variables de entorno"""
+        # Configuración de Azure Storage
+        storage_conn = os.getenv('AZURE_STORAGE_CONNECTION_STRING') or os.getenv('AzureWebJobsStorage', '')
+        # Limpiar comillas y espacios que puedan venir del .env
+        self.storage_connection_string = storage_conn.strip().strip('"').strip("'") if storage_conn else ''
+        self.storage_container = os.getenv('STORAGE_CONTAINER', 'recopilaciones')
+        
+        if not self.storage_connection_string:
+            logging.warning("AZURE_STORAGE_CONNECTION_STRING o AzureWebJobsStorage no configurado.")
+    
+    def listar_archivos_pendientes(self) -> List[str]:
+        """
+        Lista todos los archivos JSON en el storage que NO tengan "ok" en el nombre.
+        
+        Returns:
+            Lista de nombres de archivos pendientes de procesar
+        """
+        if not self.storage_connection_string:
+            logging.warning("Storage no configurado. No se pueden listar archivos.")
+            return []
+        
+        try:
+            # Crear cliente de Blob Service
+            blob_service_client = BlobServiceClient.from_connection_string(self.storage_connection_string)
+            
+            # Obtener cliente del contenedor
+            container_client = blob_service_client.get_container_client(self.storage_container)
+            
+            if not container_client.exists():
+                logging.warning(f"El contenedor '{self.storage_container}' no existe.")
+                return []
+            
+            # Listar todos los blobs
+            archivos_pendientes = []
+            for blob in container_client.list_blobs(name_starts_with="recopilacion_"):
+                nombre_archivo = blob.name
+                # Filtrar archivos que NO tengan "ok" en el nombre
+                if "ok" not in nombre_archivo.lower():
+                    archivos_pendientes.append(nombre_archivo)
+            
+            logging.info(f"Archivos pendientes encontrados: {len(archivos_pendientes)}")
+            return archivos_pendientes
+            
+        except AzureError as e:
+            logging.error(f"Error de Azure Storage al listar archivos: {e}", exc_info=True)
+            return []
+        except Exception as e:
+            logging.error(f"Error inesperado al listar archivos: {e}", exc_info=True)
+            return []
+    
+    def leer_archivo_json(self, nombre_archivo: str) -> List[Dict]:
+        """
+        Lee un archivo JSON del storage, retorna su contenido y lo renombra agregando "ok".
+        
+        Args:
+            nombre_archivo: Nombre del archivo en el storage
+        
+        Returns:
+            Lista de items del archivo JSON
+        """
+        if not self.storage_connection_string:
+            return []
+        
+        try:
+            # Crear cliente de Blob Service
+            blob_service_client = BlobServiceClient.from_connection_string(self.storage_connection_string)
+            
+            # Obtener cliente del contenedor
+            container_client = blob_service_client.get_container_client(self.storage_container)
+            
+            # Obtener cliente del blob
+            blob_client = container_client.get_blob_client(nombre_archivo)
+            
+            if not blob_client.exists():
+                logging.warning(f"El archivo '{nombre_archivo}' no existe en el storage.")
+                return []
+            
+            # Descargar y leer el archivo
+            contenido = blob_client.download_blob().readall()
+            items = json.loads(contenido.decode('utf-8'))
+            
+            if not isinstance(items, list):
+                logging.warning(f"El archivo '{nombre_archivo}' no contiene un array JSON válido.")
+                items = []
+            
+            # Renombrar archivo agregando "ok" antes de la extensión
+            self._renombrar_archivo_ok(container_client, nombre_archivo)
+            
+            logging.info(f"Archivo '{nombre_archivo}' leído: {len(items)} items y renombrado")
+            return items
+            
+        except json.JSONDecodeError as e:
+            logging.error(f"Error al parsear JSON del archivo '{nombre_archivo}': {e}")
+            # Renombrar incluso si hay error de parseo
+            try:
+                blob_service_client = BlobServiceClient.from_connection_string(self.storage_connection_string)
+                container_client = blob_service_client.get_container_client(self.storage_container)
+                self._renombrar_archivo_ok(container_client, nombre_archivo)
+            except:
+                pass
+            return []
+        except AzureError as e:
+            logging.error(f"Error de Azure Storage al leer archivo '{nombre_archivo}': {e}", exc_info=True)
+            # Intentar renombrar incluso si hay error
+            try:
+                blob_service_client = BlobServiceClient.from_connection_string(self.storage_connection_string)
+                container_client = blob_service_client.get_container_client(self.storage_container)
+                self._renombrar_archivo_ok(container_client, nombre_archivo)
+            except:
+                pass
+            return []
+        except Exception as e:
+            logging.error(f"Error inesperado al leer archivo '{nombre_archivo}': {e}", exc_info=True)
+            # Intentar renombrar incluso si hay error
+            try:
+                blob_service_client = BlobServiceClient.from_connection_string(self.storage_connection_string)
+                container_client = blob_service_client.get_container_client(self.storage_container)
+                self._renombrar_archivo_ok(container_client, nombre_archivo)
+            except:
+                pass
+            return []
+    
+    def _renombrar_archivo_ok(self, container_client, nombre_archivo: str) -> None:
+        """
+        Renombra un archivo agregando "_ok" antes de la extensión.
+        
+        Args:
+            container_client: Cliente del contenedor de Azure Storage
+            nombre_archivo: Nombre del archivo original
+        """
+        try:
+            # Generar nuevo nombre: agregar "_ok" antes de .json
+            if nombre_archivo.endswith('.json'):
+                nuevo_nombre = nombre_archivo[:-5] + '_ok.json'
+            else:
+                nuevo_nombre = nombre_archivo + '_ok'
+            
+            # Obtener clientes de blob
+            blob_origen = container_client.get_blob_client(nombre_archivo)
+            blob_destino = container_client.get_blob_client(nuevo_nombre)
+            
+            # Copiar el blob con el nuevo nombre
+            blob_destino.start_copy_from_url(blob_origen.url)
+            
+            # Esperar a que la copia se complete
+            import time
+            props = blob_destino.get_blob_properties()
+            copy_id = props.copy.id if props.copy else None
+            while props.copy.status == 'pending':
+                time.sleep(0.5)
+                props = blob_destino.get_blob_properties()
+                if props.copy.status != 'pending':
+                    break
+            
+            # Si la copia fue exitosa, eliminar el archivo original
+            if props.copy.status == 'success':
+                blob_origen.delete_blob()
+                logging.info(f"Archivo renombrado: '{nombre_archivo}' -> '{nuevo_nombre}'")
+            else:
+                logging.warning(f"Error al copiar archivo '{nombre_archivo}': {props.copy.status}")
+                
+        except Exception as e:
+            logging.error(f"Error al renombrar archivo '{nombre_archivo}': {e}", exc_info=True)
+    
+    def compactar_archivos(self) -> Dict:
+        """
+        Lee todos los archivos pendientes y los compacta en una única respuesta JSON.
+        
+        Returns:
+            Diccionario con todos los items compactados y estadísticas
+        """
+        logging.info("=== INICIANDO PROCESAMIENTO ===")
+        
+        # Listar archivos pendientes
+        archivos_pendientes = self.listar_archivos_pendientes()
+        
+        if not archivos_pendientes:
+            logging.info("No hay archivos pendientes de procesar.")
+            return {
+                "items": [],
+                "total_items": 0,
+                "archivos_procesados": 0,
+                "archivos": []
+            }
+        
+        # Leer todos los archivos y compactar
+        todos_items = []
+        archivos_procesados = []
+        
+        for nombre_archivo in archivos_pendientes:
+            logging.info(f"Leyendo archivo: {nombre_archivo}")
+            items = self.leer_archivo_json(nombre_archivo)
+            
+            if items:
+                todos_items.extend(items)
+                archivos_procesados.append(nombre_archivo)
+                logging.info(f"  ✓ {len(items)} items agregados")
+            else:
+                logging.warning(f"  ⚠ Archivo '{nombre_archivo}' vacío o con errores")
+        
+        logging.info(f"Total de items compactados: {len(todos_items)}")
+        logging.info(f"Archivos procesados: {len(archivos_procesados)}")
+        
+        return {
+            "items": todos_items,
+            "total_items": len(todos_items),
+            "archivos_procesados": len(archivos_procesados),
+            "archivos": archivos_procesados
+        }
+

@@ -130,10 +130,11 @@
   "ABOUT": {
     "TITLE": "About NeuroFinder",
     "SUBTITLE": "An academic project with a social mission.",
-    "DESCRIPTION": "NeuroFinder was created as the Master’s Thesis for the Artificial Intelligence Master’s program at Universidad Internacional de La Rioja (UNIR).",
+    "DESCRIPTION": "NeuroFinder was created as the Master's Thesis for the Artificial Intelligence Master's program at Universidad Internacional de La Rioja (UNIR).",
     "PURPOSE": "Our goal is to streamline the search for clinical and scientific information on dementias through a specialised semantic engine.",
     "MOTIVATION": "The motivation behind the project is twofold: accelerate evidence discovery for professionals and provide a useful, supportive tool for families and people affected.",
-    "CONTACT_BUTTON": "Connect on LinkedIn"
+    "CONTACT_BUTTON": "Connect on LinkedIn",
+    "EMAIL_BUTTON": "Contact by email"
   },
   "SEO": {
     "HOME": {

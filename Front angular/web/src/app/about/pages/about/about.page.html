@@ -11,16 +11,27 @@
     <p>{{ 'ABOUT.MOTIVATION' | translate }}</p>
   </article>
 
-  <a
-    mat-raised-button
-    color="primary"
-    class="about__contact"
-    href="https://www.linkedin.com/in/josevicenteantoncoy/"
-    target="_blank"
-    rel="noopener noreferrer"
-  >
-    <span>{{ 'ABOUT.CONTACT_BUTTON' | translate }}</span>
-    <mat-icon>north_east</mat-icon>
-  </a>
+  <div class="about__actions">
+    <a
+      mat-raised-button
+      color="primary"
+      class="about__contact"
+      href="https://www.linkedin.com/in/josevicenteantoncoy/"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <span>{{ 'ABOUT.CONTACT_BUTTON' | translate }}</span>
+      <mat-icon>north_east</mat-icon>
+    </a>
+    <a
+      mat-raised-button
+      color="accent"
+      class="about__contact"
+      href="mailto:support&#64;neurofinder.org"
+    >
+      <span>{{ 'ABOUT.EMAIL_BUTTON' | translate }}</span>
+      <mat-icon>email</mat-icon>
+    </a>
+  </div>
 </section>
 

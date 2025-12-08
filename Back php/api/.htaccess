@@ -1,11 +1,29 @@
+# Evita que se pueda acceder al archivo .htaccess
+<Files ".htaccess">
+    Require all denied
+</Files>
+
 RewriteEngine On
 
-# Serve existing files/directories
+# Fuerza HTTPS
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Sirve archivos y directorios existentes
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 
-# Redirect everything else to the front controller
-RewriteRule ^ index.php [QSA,L]
+# Fallback SPA Angular (otras rutas vuelven a index.html)
+RewriteRule ^ index.html [L]
 
+# Variables de conexión a tu BD
+SetEnv DB_HOST localhost
+SetEnv DB_PORT 3306
+SetEnv DB_DATABASE tu_bd
+SetEnv DB_USERNAME tu_user
+SetEnv DB_PASSWORD tu_pass
 
+# URLs de Azure Functions
+SetEnv AZURE_COLLECT_URL https://tufunction.azurewebsites.net/api/collect?code=123abc
+SetEnv AZURE_FETCH_URL https://tufunction.azurewebsites.net/api/fetch?code=456def

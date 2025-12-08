@@ -133,7 +133,8 @@
     "DESCRIPTION": "NeuroFinder nace como Trabajo de Fin de Máster del Máster en Inteligencia Artificial de la Universidad Internacional de La Rioja (UNIR).",
     "PURPOSE": "Nuestro propósito es agilizar la búsqueda de información clínica y científica sobre demencias mediante un buscador semántico especializado.",
     "MOTIVATION": "La motivación del proyecto es doble: acelerar el acceso a evidencias para profesionales y crear una herramienta útil y cercana para familiares y personas afectadas.",
-    "CONTACT_BUTTON": "Contactar por LinkedIn"
+    "CONTACT_BUTTON": "Contactar por LinkedIn",
+    "EMAIL_BUTTON": "Contactar por correo"
   },
   "SEO": {
     "HOME": {

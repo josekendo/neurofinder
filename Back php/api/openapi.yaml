@@ -91,6 +91,27 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/ServerError'
+  /report:
+    post:
+      summary: Reportar un artículo o noticia
+      description: Permite a los usuarios reportar contenido inapropiado o incorrecto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportRequest'
+      responses:
+        '200':
+          description: Reporte enviado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
 components:
   responses:
     BadRequest:
@@ -117,6 +138,11 @@ components:
       properties:
         status:
           type: string
+          enum:
+            - ok
+            - warning
+            - degraded
+          description: Estado general del servicio
           example: ok
         profile:
           type: string
@@ -126,10 +152,86 @@ components:
           type: string
           format: date-time
           example: 2025-07-24T10:15:30Z
+        database:
+          type: object
+          description: Estado de la conexión a la base de datos
+          properties:
+            status:
+              type: string
+              enum:
+                - ok
+                - error
+                - not_configured
+              example: not_configured
+            message:
+              type: string
+              example: Base de datos no configurada (no requerida en modo mock)
+            configured:
+              type: boolean
+              example: false
+            host:
+              type: string
+              nullable: true
+              example: null
+            port:
+              type: integer
+              nullable: true
+              example: null
+            database:
+              type: string
+              nullable: true
+              example: null
+          required:
+            - status
+            - message
+            - configured
+        services:
+          type: object
+          description: Estado de los servicios del sistema
+          properties:
+            status:
+              type: string
+              enum:
+                - ok
+                - warning
+              example: ok
+            services:
+              type: object
+              description: Estado individual de cada servicio
+              additionalProperties:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - ok
+                      - error
+                  message:
+                    type: string
+                  available:
+                    type: boolean
+                  version:
+                    type: string
+                    nullable: true
+              example:
+                mail:
+                  status: ok
+                  message: Servicio de correo disponible
+                  available: true
+                php:
+                  status: ok
+                  message: PHP funcionando correctamente
+                  version: 8.2.0
+                  available: true
+          required:
+            - status
+            - services
       required:
         - status
         - profile
         - timestamp
+        - database
+        - services
     MetricsSnapshot:
       type: object
       properties:
@@ -284,6 +386,39 @@ components:
       required:
         - query
         - filters
+    ReportRequest:
+      type: object
+      properties:
+        itemUrl:
+          type: string
+          format: uri
+          description: URL del artículo o noticia a reportar
+          example: https://example.com/article/123
+        email:
+          type: string
+          format: email
+          description: Correo electrónico del usuario que reporta
+          example: usuario@example.com
+        description:
+          type: string
+          description: Descripción opcional del motivo del reporte
+          nullable: true
+          example: Contenido incorrecto o desactualizado
+      required:
+        - itemUrl
+        - email
+    ReportResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Reporte enviado correctamente
+      required:
+        - success
+        - message
     ErrorResponse:
       type: object
       properties:

@@ -5,6 +5,8 @@ namespace NeuroFinder\Http;
 
 final class Response
 {
+    private ?string $rawBody = null;
+
     public function __construct(
         private readonly int $status,
         private readonly array $body = [],
@@ -37,6 +39,20 @@ final class Response
         return new self(500, ['error' => $message]);
     }
 
+    public static function html(int $status, string $html, array $headers = []): self
+    {
+        $response = new self($status, [], array_merge(['Content-Type: text/html; charset=utf-8'], $headers));
+        $response->rawBody = $html;
+        return $response;
+    }
+
+    public static function raw(int $status, string $content, array $headers = []): self
+    {
+        $response = new self($status, [], $headers);
+        $response->rawBody = $content;
+        return $response;
+    }
+
     public function send(): void
     {
         http_response_code($this->status);
@@ -46,6 +62,11 @@ final class Response
         }
 
         if ($this->status === 204) {
+            return;
+        }
+
+        if ($this->rawBody !== null) {
+            echo $this->rawBody;
             return;
         }
 

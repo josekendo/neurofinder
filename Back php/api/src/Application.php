@@ -48,6 +48,14 @@ final class Application
 
     private function dispatch(string $method, string $path): Response
     {
+        if ($method === 'GET' && $path === '/docs') {
+            return $this->handleDocs();
+        }
+
+        if ($method === 'GET' && $path === '/openapi.yaml') {
+            return $this->handleOpenApiYaml();
+        }
+
         if ($method === 'GET' && $path === '/health') {
             return $this->handleHealth();
         }
@@ -401,6 +409,100 @@ final class Application
         }
 
         mail($to, $subject, $message, $headerString);
+    }
+
+    private function handleDocs(): Response
+    {
+        $openApiUrl = $this->getBaseUrl() . '/openapi.yaml';
+        
+        $html = <<<HTML
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroFinder API - Documentación</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui.css" />
+    <style>
+        html {
+            box-sizing: border-box;
+            overflow: -moz-scrollbars-vertical;
+            overflow-y: scroll;
+        }
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+        body {
+            margin: 0;
+            background: #fafafa;
+        }
+    </style>
+</head>
+<body>
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            window.ui = SwaggerUIBundle({
+                url: "{$openApiUrl}",
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                validatorUrl: null
+            });
+        };
+    </script>
+</body>
+</html>
+HTML;
+
+        return Response::html(200, $html);
+    }
+
+    private function handleOpenApiYaml(): Response
+    {
+        $yamlPath = __DIR__ . '/../openapi.yaml';
+        if (!file_exists($yamlPath)) {
+            return Response::notFound('Archivo OpenAPI no encontrado');
+        }
+
+        $content = file_get_contents($yamlPath);
+        if ($content === false) {
+            return Response::serverError('Error al leer el archivo OpenAPI');
+        }
+
+        return Response::raw(200, $content, [
+            'Content-Type: application/x-yaml; charset=utf-8',
+            'Content-Disposition: inline; filename="openapi.yaml"'
+        ]);
+    }
+
+    private function getBaseUrl(): string
+    {
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $script = $_SERVER['SCRIPT_NAME'] ?? '';
+        $baseDir = dirname($script);
+        
+        // Limpiar el baseDir si termina en /public
+        if (str_ends_with($baseDir, '/public')) {
+            $baseDir = substr($baseDir, 0, -7);
+        }
+        
+        $basePath = rtrim($baseDir, '/');
+        if ($this->basePath !== '') {
+            $basePath = $this->basePath;
+        }
+        
+        return $protocol . '://' . $host . $basePath;
     }
 }
 

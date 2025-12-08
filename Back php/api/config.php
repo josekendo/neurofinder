@@ -19,5 +19,6 @@ return [
     'DB_PASSWORD' => '',
     'AZURE_COLLECT_URL' => '',
     'AZURE_FETCH_URL' => '',
+    'AZURE_SEARCH_URL' => '',
 ];
 

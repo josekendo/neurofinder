@@ -143,19 +143,22 @@ class EvaluadorService:
             logging.error(f"Error al generar embeddings en lote: {e}", exc_info=True)
             return [None] * len(textos)
     
-    def preparar_textos_para_indexar(self, items: List[Dict]) -> tuple[List[str], List[Dict]]:
+    def preparar_textos_para_indexar(self, items: List[Dict]) -> tuple[List[str], List[Dict], Dict[str, List[tuple]]]:
         """
         Prepara los textos de summary y key_points para indexar.
         Combina summary y key_points en un solo texto por item.
+        También agrupa items por etiquetas para crear índices separados.
         
         Args:
             items: Lista de items con summary y key_points
         
         Returns:
-            Tupla con (textos para indexar, metadatos con URLs)
+            Tupla con (textos para indexar, metadatos con URLs, items_por_tag)
+            items_por_tag es un dict donde la clave es el tag y el valor es lista de (texto, metadata)
         """
         textos = []
         metadatos = []
+        items_por_tag = {}  # {tag: [(texto, metadata), ...]}
         
         for item in items:
             url = item.get('url', '')
@@ -175,15 +178,43 @@ class EvaluadorService:
                     texto_combinado += ' ' + puntos_texto
             
             # Solo agregar si hay texto
-            if texto_combinado.strip():
-                textos.append(texto_combinado.strip())
-                metadatos.append({
-                    'url': url,
-                    'tipo': item.get('tipo', 'article'),
-                    'title': item.get('title', '')
-                })
+            if not texto_combinado.strip():
+                continue
+            
+            texto_final = texto_combinado.strip()
+            
+            # Metadata para el índice general
+            metadata = {
+                'url': url,
+                'tipo': item.get('tipo', 'article'),
+                'title': item.get('title', '')
+            }
+            
+            textos.append(texto_final)
+            metadatos.append(metadata)
+            
+            # Agrupar por tags para índices específicos
+            tags = item.get('tags', [])
+            if isinstance(tags, str):
+                try:
+                    import json
+                    tags = json.loads(tags)
+                except:
+                    tags = []
+            
+            if not isinstance(tags, list):
+                tags = []
+            
+            # Agregar a cada índice de tag
+            for tag in tags:
+                if tag and isinstance(tag, str):
+                    # Normalizar nombre de tag para el nombre de archivo
+                    tag_normalizado = tag.replace('.', '-').replace('/', '-')
+                    if tag_normalizado not in items_por_tag:
+                        items_por_tag[tag_normalizado] = []
+                    items_por_tag[tag_normalizado].append((texto_final, metadata))
         
-        return textos, metadatos
+        return textos, metadatos, items_por_tag
     
     def obtener_indice_mas_reciente(self) -> Optional[Tuple[str, str]]:
         """
@@ -203,11 +234,21 @@ class EvaluadorService:
             if not container_client.exists():
                 return None
             
-            # Listar todos los archivos de índice
+            # Buscar primero el índice general (faiss-general)
+            nombre_indice = "faiss-general.idx"
+            nombre_metadata = "faiss-general_metadata.pkl"
+            
+            blob_idx = container_client.get_blob_client(nombre_indice)
+            blob_meta = container_client.get_blob_client(nombre_metadata)
+            
+            if blob_idx.exists() and blob_meta.exists():
+                return (nombre_indice, nombre_metadata)
+            
+            # Si no existe faiss-general, buscar cualquier índice faiss_*
             indices = []
-            for blob in container_client.list_blobs(name_starts_with="faiss_index_"):
+            for blob in container_client.list_blobs(name_starts_with="faiss"):
                 nombre = blob.name
-                if nombre.endswith('.idx'):
+                if nombre.endswith('.idx') and not nombre.startswith('faiss-'):
                     nombre_metadata = nombre[:-4] + '_metadata.pkl'
                     blob_meta = container_client.get_blob_client(nombre_metadata)
                     if blob_meta.exists():
@@ -336,7 +377,7 @@ class EvaluadorService:
         logging.info(f"Items nuevos para indexar: {len(items_nuevos)} (de {len(items)} totales)")
         
         # Preparar textos y metadatos solo para items nuevos
-        textos, metadatos = self.preparar_textos_para_indexar(items_nuevos)
+        textos, metadatos, items_por_tag = self.preparar_textos_para_indexar(items_nuevos)
         
         if not textos:
             logging.warning("No hay textos válidos para indexar.")
@@ -345,6 +386,7 @@ class EvaluadorService:
             return None
         
         logging.info(f"Textos preparados para indexar: {len(textos)}")
+        logging.info(f"Tags encontrados: {len(items_por_tag)} ({', '.join(list(items_por_tag.keys())[:5])}...)")
         
         # Generar embeddings
         logging.info("Generando embeddings para items nuevos...")
@@ -402,16 +444,18 @@ class EvaluadorService:
             'textos': textos_finales,
             'metadatos': metadatos_finales,
             'total_vectores': index.ntotal,
-            'items_nuevos_agregados': len(embeddings_validos)
+            'items_nuevos_agregados': len(embeddings_validos),
+            'items_por_tag': items_por_tag  # Incluir items agrupados por tag
         }
     
-    def subir_indice_a_storage(self, indice_data: Dict, nombre_archivo: str = None) -> Dict:
+    def subir_indice_a_storage(self, indice_data: Dict, nombre_archivo: str = None, es_general: bool = True) -> Dict:
         """
         Sube el índice FAISS y metadatos al storage.
         
         Args:
             indice_data: Diccionario con index, textos y metadatos
-            nombre_archivo: Nombre base para los archivos (sin extensión)
+            nombre_archivo: Nombre base para los archivos (sin extensión). Si None, usa "faiss-general" o genera uno con fecha
+            es_general: Si True, usa "faiss-general", si False usa el nombre_archivo proporcionado
         
         Returns:
             Diccionario con URLs de los archivos subidos
@@ -421,8 +465,11 @@ class EvaluadorService:
             return {}
         
         if nombre_archivo is None:
-            from datetime import datetime
-            nombre_archivo = f"faiss_index_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            if es_general:
+                nombre_archivo = "faiss-general"
+            else:
+                from datetime import datetime
+                nombre_archivo = f"faiss_index_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         
         try:
             # Crear cliente de Blob Service
@@ -495,9 +542,57 @@ class EvaluadorService:
             logging.error(f"Error al subir índice a storage: {e}", exc_info=True)
             return {}
     
+    def construir_indice_por_tag(self, items_por_tag: Dict[str, List[tuple]], tag: str) -> Optional[Dict]:
+        """
+        Construye un índice FAISS específico para un tag.
+        
+        Args:
+            items_por_tag: Diccionario con items agrupados por tag
+            tag: Tag para el cual construir el índice
+        
+        Returns:
+            Diccionario con información del índice construido o None si hay error
+        """
+        if tag not in items_por_tag or not items_por_tag[tag]:
+            return None
+        
+        textos = [item[0] for item in items_por_tag[tag]]
+        metadatos = [item[1] for item in items_por_tag[tag]]
+        
+        logging.info(f"Generando embeddings para índice de tag '{tag}': {len(textos)} items")
+        embeddings = self.generar_embeddings_batch(textos, batch_size=100)
+        
+        # Filtrar embeddings válidos
+        textos_validos = []
+        metadatos_validos = []
+        embeddings_validos = []
+        
+        for texto, metadata, embedding in zip(textos, metadatos, embeddings):
+            if embedding is not None:
+                textos_validos.append(texto)
+                metadatos_validos.append(metadata)
+                embeddings_validos.append(embedding)
+        
+        if not embeddings_validos:
+            return None
+        
+        embeddings_array = np.array(embeddings_validos, dtype=np.float32)
+        faiss.normalize_L2(embeddings_array)
+        
+        # Crear índice para este tag
+        index = faiss.IndexFlatIP(self.EMBEDDING_DIMENSION)
+        index.add(embeddings_array)
+        
+        return {
+            'index': index,
+            'textos': textos_validos,
+            'metadatos': metadatos_validos,
+            'total_vectores': index.ntotal
+        }
+    
     def ejecutar_evaluacion(self, items: List[Dict], nombre_archivo: str = None) -> Dict:
         """
-        Ejecuta el proceso completo de evaluación: construye índice FAISS y lo sube al storage.
+        Ejecuta el proceso completo de evaluación: construye índice FAISS general y por tags, y los sube al storage.
         Si ya existe un índice, agrega solo los items nuevos.
         
         Args:
@@ -510,16 +605,20 @@ class EvaluadorService:
         logging.info("=== INICIANDO EVALUACIÓN ===")
         logging.info(f"Items recibidos: {len(items)}")
         
-        # Verificar si existe índice y obtener su nombre si no se especifica uno
+        # Verificar si existe índice general y obtener su nombre si no se especifica uno
+        nombre_archivo_general = "faiss-general"
         if nombre_archivo is None:
             indices_info = self.obtener_indice_mas_reciente()
             if indices_info:
                 # Extraer nombre base del índice existente (sin extensión)
                 nombre_indice_existente = indices_info[0]
-                nombre_archivo = nombre_indice_existente.replace('.idx', '')
-                logging.info(f"Usando índice existente: {nombre_archivo}")
+                if nombre_indice_existente.startswith("faiss-general"):
+                    nombre_archivo_general = "faiss-general"
+                else:
+                    nombre_archivo_general = nombre_indice_existente.replace('.idx', '')
+                logging.info(f"Usando índice existente: {nombre_archivo_general}")
         
-        # Construir índice (o agregar a existente)
+        # Construir índice general (o agregar a existente)
         indice_data = self.construir_indice_faiss(items, agregar_a_existente=True)
         
         if not indice_data:
@@ -531,26 +630,80 @@ class EvaluadorService:
         
         # Si se agregaron items nuevos, usar el nombre del archivo existente o crear uno nuevo
         items_nuevos = indice_data.get('items_nuevos_agregados', 0)
-        if items_nuevos == 0 and nombre_archivo:
-            # No hay items nuevos, no es necesario actualizar
-            logging.info("No hay items nuevos para agregar al índice existente.")
-            return {
-                "items_procesados": len(items),
-                "vectores_indexados": indice_data['total_vectores'],
-                "items_nuevos_agregados": 0,
-                "mensaje": "Todos los items ya estaban indexados"
-            }
+        items_por_tag = indice_data.get('items_por_tag', {})
         
-        # Subir al storage (sobrescribirá el existente si se agregaron items)
-        resultado_upload = self.subir_indice_a_storage(indice_data, nombre_archivo)
+        resultados_indices = {}
         
-        if not resultado_upload:
-            return {
-                "error": "No se pudo subir el índice al storage",
-                "items_procesados": len(items),
-                "vectores_indexados": indice_data['total_vectores'],
-                "items_nuevos_agregados": items_nuevos
-            }
+        # Subir índice general
+        if items_nuevos > 0 or nombre_archivo_general == "faiss-general":
+            resultado_upload_general = self.subir_indice_a_storage(
+                indice_data, 
+                nombre_archivo_general, 
+                es_general=True
+            )
+            if resultado_upload_general:
+                resultados_indices['general'] = resultado_upload_general
+        
+        # Construir y subir índices por tag
+        indices_por_tag = {}
+        for tag, items_tag in items_por_tag.items():
+            if not items_tag:
+                continue
+            
+            logging.info(f"Construyendo índice para tag: {tag}")
+            
+            # Intentar cargar índice existente para este tag
+            nombre_indice_tag = f"faiss-{tag}"
+            indices_info_tag = self.obtener_indice_por_tag(nombre_indice_tag)
+            indice_existente_tag = None
+            
+            if indices_info_tag:
+                indice_existente_tag = self.cargar_indice_existente(
+                    indices_info_tag[0], 
+                    indices_info_tag[1]
+                )
+            
+            # Construir índice para este tag
+            indice_tag_data = self.construir_indice_por_tag(items_por_tag, tag)
+            
+            if indice_tag_data:
+                # Si hay índice existente, agregar items nuevos
+                if indice_existente_tag:
+                    # Filtrar items nuevos por URL
+                    urls_existentes = {meta.get('url', '') for meta in indice_existente_tag['metadatos']}
+                    textos_nuevos = []
+                    metadatos_nuevos = []
+                    
+                    for texto, metadata in zip(indice_tag_data['textos'], indice_tag_data['metadatos']):
+                        if metadata.get('url', '') not in urls_existentes:
+                            textos_nuevos.append(texto)
+                            metadatos_nuevos.append(metadata)
+                    
+                    if textos_nuevos:
+                        # Generar embeddings para items nuevos
+                        embeddings_nuevos = self.generar_embeddings_batch(textos_nuevos, batch_size=100)
+                        embeddings_validos_nuevos = [e for e in embeddings_nuevos if e is not None]
+                        
+                        if embeddings_validos_nuevos:
+                            embeddings_array_nuevos = np.array(embeddings_validos_nuevos, dtype=np.float32)
+                            faiss.normalize_L2(embeddings_array_nuevos)
+                            
+                            indice_existente_tag['index'].add(embeddings_array_nuevos)
+                            indice_existente_tag['textos'].extend(textos_nuevos)
+                            indice_existente_tag['metadatos'].extend(metadatos_nuevos)
+                            indice_existente_tag['total_vectores'] = indice_existente_tag['index'].ntotal
+                            
+                            indice_tag_data = indice_existente_tag
+                
+                # Subir índice del tag
+                resultado_upload_tag = self.subir_indice_a_storage(
+                    indice_tag_data,
+                    nombre_indice_tag,
+                    es_general=False
+                )
+                
+                if resultado_upload_tag:
+                    indices_por_tag[tag] = resultado_upload_tag
         
         logging.info("=== EVALUACIÓN COMPLETADA ===")
         
@@ -558,9 +711,44 @@ class EvaluadorService:
             "items_procesados": len(items),
             "vectores_indexados": indice_data['total_vectores'],
             "items_nuevos_agregados": items_nuevos,
-            "indice_url": resultado_upload.get('indice_url', ''),
-            "metadata_url": resultado_upload.get('metadata_url', ''),
-            "nombre_indice": resultado_upload.get('nombre_indice', ''),
-            "nombre_metadata": resultado_upload.get('nombre_metadata', '')
+            "indice_general": resultados_indices.get('general', {}),
+            "indices_por_tag": indices_por_tag,
+            "total_tags_indexados": len(indices_por_tag)
         }
+    
+    def obtener_indice_por_tag(self, nombre_base: str) -> Optional[Tuple[str, str]]:
+        """
+        Obtiene un índice FAISS específico por nombre base.
+        
+        Args:
+            nombre_base: Nombre base del índice (ej: "faiss-tnm-alzheimer")
+        
+        Returns:
+            Tupla con (nombre_indice, nombre_metadata) o None si no existe
+        """
+        if not self.storage_connection_string:
+            return None
+        
+        try:
+            from azure.storage.blob import BlobServiceClient
+            blob_service_client = BlobServiceClient.from_connection_string(self.storage_connection_string)
+            container_client = blob_service_client.get_container_client(self.storage_container)
+            
+            if not container_client.exists():
+                return None
+            
+            nombre_indice = f"{nombre_base}.idx"
+            nombre_metadata = f"{nombre_base}_metadata.pkl"
+            
+            blob_idx = container_client.get_blob_client(nombre_indice)
+            blob_meta = container_client.get_blob_client(nombre_metadata)
+            
+            if blob_idx.exists() and blob_meta.exists():
+                return (nombre_indice, nombre_metadata)
+            
+            return None
+            
+        except Exception as e:
+            logging.warning(f"Error al buscar índice por tag: {e}")
+            return None
 

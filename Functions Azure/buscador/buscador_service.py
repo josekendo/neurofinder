@@ -77,12 +77,16 @@ class BuscadorService:
             logging.error(f"Error al generar embedding: {e}", exc_info=True)
             return None
     
-    def obtener_indice_mas_reciente(self) -> Optional[Tuple[str, str]]:
+    def obtener_indice_mas_reciente(self, tag: str = None) -> Optional[Tuple[str, str]]:
         """
         Obtiene el índice FAISS más reciente del storage.
+        Si se proporciona un tag, busca el índice específico de ese tag.
+        
+        Args:
+            tag: Tag específico para buscar (ej: "tnm.alzheimer"). Si None, busca el índice general.
         
         Returns:
-            Tupla con (nombre_indice, nombre_metadata) o None si hay error
+            Tupla con (nombre_indice, nombre_metadata) o None si no existe
         """
         if not self.storage_connection_string:
             logging.error("Azure Storage no configurado.")
@@ -99,14 +103,43 @@ class BuscadorService:
                 logging.error(f"El contenedor '{self.storage_container}' no existe.")
                 return None
             
-            # Listar todos los archivos de índice
+            # Si hay tag, buscar índice específico
+            if tag:
+                # Normalizar tag para nombre de archivo
+                tag_normalizado = tag.replace('.', '-').replace('/', '-')
+                nombre_base = f"faiss-{tag_normalizado}"
+                nombre_indice = f"{nombre_base}.idx"
+                nombre_metadata = f"{nombre_base}_metadata.pkl"
+                
+                blob_idx = container_client.get_blob_client(nombre_indice)
+                blob_meta = container_client.get_blob_client(nombre_metadata)
+                
+                if blob_idx.exists() and blob_meta.exists():
+                    logging.info(f"Índice específico encontrado para tag '{tag}': {nombre_indice}")
+                    return (nombre_indice, nombre_metadata)
+                else:
+                    logging.warning(f"Índice específico para tag '{tag}' no encontrado, usando índice general")
+                    # Si no existe el índice específico, usar el general
+                    tag = None
+            
+            # Buscar índice general (faiss-general)
+            if not tag:
+                nombre_indice = "faiss-general.idx"
+                nombre_metadata = "faiss-general_metadata.pkl"
+                
+                blob_idx = container_client.get_blob_client(nombre_indice)
+                blob_meta = container_client.get_blob_client(nombre_metadata)
+                
+                if blob_idx.exists() and blob_meta.exists():
+                    logging.info(f"Índice general encontrado: {nombre_indice}")
+                    return (nombre_indice, nombre_metadata)
+            
+            # Si no existe el general, buscar cualquier índice faiss_*
             indices = []
-            for blob in container_client.list_blobs(name_starts_with="faiss_index_"):
+            for blob in container_client.list_blobs(name_starts_with="faiss"):
                 nombre = blob.name
                 if nombre.endswith('.idx'):
-                    # Buscar el metadata correspondiente
                     nombre_metadata = nombre[:-4] + '_metadata.pkl'
-                    # Verificar que existe el metadata
                     blob_meta = container_client.get_blob_client(nombre_metadata)
                     if blob_meta.exists():
                         indices.append((nombre, nombre_metadata, blob.last_modified))
@@ -117,7 +150,6 @@ class BuscadorService:
             
             # Ordenar por fecha de modificación (más reciente primero)
             indices.sort(key=lambda x: x[2], reverse=True)
-            
             nombre_indice, nombre_metadata, _ = indices[0]
             logging.info(f"Índice más reciente encontrado: {nombre_indice}")
             
@@ -204,15 +236,16 @@ class BuscadorService:
             logging.error(f"Error al cargar índice: {e}", exc_info=True)
             return None
     
-    def buscar(self, query: str, k: int = 40, nombre_indice: str = None, nombre_metadata: str = None) -> List[Dict]:
+    def buscar(self, query: str, k: int = 40, nombre_indice: str = None, nombre_metadata: str = None, tag: str = None) -> List[Dict]:
         """
         Busca los k documentos más similares a la query en el índice FAISS.
         
         Args:
             query: Texto de consulta
             k: Número de resultados a retornar (por defecto 40)
-            nombre_indice: Nombre del índice a usar (None para usar el más reciente)
-            nombre_metadata: Nombre de los metadatos a usar (None para usar el más reciente)
+            nombre_indice: Nombre del índice a usar (None para usar el más reciente o por tag)
+            nombre_metadata: Nombre de los metadatos a usar (None para usar el más reciente o por tag)
+            tag: Tag específico para buscar en índice filtrado (ej: "tnm.alzheimer")
         
         Returns:
             Lista de resultados con url, score, tipo, title
@@ -220,12 +253,14 @@ class BuscadorService:
         logging.info(f"=== INICIANDO BÚSQUEDA ===")
         logging.info(f"Query: {query}")
         logging.info(f"Resultados solicitados: {k}")
+        if tag:
+            logging.info(f"Tag filtrado: {tag}")
         
         # Obtener índice más reciente si no se especifica
         if nombre_indice is None or nombre_metadata is None:
-            indices = self.obtener_indice_mas_reciente()
+            indices = self.obtener_indice_mas_reciente(tag=tag)
             if not indices:
-                logging.error("No se pudo obtener el índice más reciente.")
+                logging.error("No se pudo obtener el índice.")
                 return []
             nombre_indice, nombre_metadata = indices
         
@@ -283,13 +318,14 @@ class BuscadorService:
         
         return resultados
     
-    def ejecutar_busqueda(self, query: str, k: int = 40) -> Dict:
+    def ejecutar_busqueda(self, query: str, k: int = 40, tag: str = None) -> Dict:
         """
         Ejecuta el proceso completo de búsqueda.
         
         Args:
             query: Texto de consulta
             k: Número de resultados a retornar
+            tag: Tag específico para buscar en índice filtrado (ej: "tnm.alzheimer")
         
         Returns:
             Diccionario con resultados de la búsqueda
@@ -304,10 +340,11 @@ class BuscadorService:
             }
         
         # Buscar
-        resultados = self.buscar(query, k)
+        resultados = self.buscar(query, k, tag=tag)
         
         return {
             "query": query,
+            "tag": tag,
             "resultados": resultados,
             "total": len(resultados)
         }

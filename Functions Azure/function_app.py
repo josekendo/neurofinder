@@ -201,11 +201,14 @@ def buscador(req: func.HttpRequest) -> func.HttpResponse:
             except ValueError:
                 k = 40
         
+        # Obtener tag opcional para buscar en índice específico
+        tag = req.params.get('tag')
+        
         # Crear servicio de búsqueda
         service = BuscadorService()
         
         # Ejecutar búsqueda
-        resultado = service.ejecutar_busqueda(query, k)
+        resultado = service.ejecutar_busqueda(query, k, tag=tag)
         
         # Retornar resultado como JSON
         return func.HttpResponse(

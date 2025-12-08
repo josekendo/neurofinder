@@ -18,6 +18,10 @@
           <a mat-button color="primary" [href]="item.url" target="_blank" rel="noopener">
             {{ 'NEWS.READ_MORE' | translate }}
           </a>
+          <button mat-stroked-button color="warn" (click)="openReportModal(item.url)">
+            <mat-icon>flag</mat-icon>
+            {{ 'DETAIL.REPORT' | translate }}
+          </button>
         </mat-card-actions>
       </mat-card>
     }

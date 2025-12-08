@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { ArticleDetail, ArticleSummary, MetricsSnapshot, NewsItem, SearchRequest } from '../models/content.models';
+import { ArticleDetail, ArticleSummary, MetricsSnapshot, NewsItem, ReportRequest, SearchRequest } from '../models/content.models';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
@@ -25,6 +25,10 @@ export class ApiService {
 
   getMetrics(): Observable<MetricsSnapshot> {
     return this.http.get<MetricsSnapshot>(`${this.baseUrl}/metrics`);
+  }
+
+  reportItem(request: ReportRequest): Observable<{ success: boolean; message?: string }> {
+    return this.http.post<{ success: boolean; message?: string }>(`${this.baseUrl}/report`, request);
   }
 }
 

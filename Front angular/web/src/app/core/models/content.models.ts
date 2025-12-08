@@ -48,3 +48,9 @@ export interface MetricsSnapshot {
   updatedAt: string;
 }
 
+export interface ReportRequest {
+  itemUrl: string;
+  email: string;
+  description?: string;
+}
+

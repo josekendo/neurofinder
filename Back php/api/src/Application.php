@@ -95,6 +95,10 @@ final class Application
             return Response::ok($article);
         }
 
+        if ($method === 'POST' && $path === '/report') {
+            return $this->handleReport();
+        }
+
         return Response::notFound('Ruta no encontrada');
     }
 
@@ -207,6 +211,103 @@ final class Application
         }
 
         return false;
+    }
+
+    private function handleReport(): Response
+    {
+        $payload = $this->getJsonBody();
+
+        // Validar campos requeridos
+        if (!isset($payload['itemUrl']) || !isset($payload['email'])) {
+            return Response::badRequest('Los campos itemUrl y email son obligatorios');
+        }
+
+        $itemUrl = trim((string)$payload['itemUrl']);
+        $email = trim((string)$payload['email']);
+        $description = isset($payload['description']) ? trim((string)$payload['description']) : '';
+
+        // Validar formato de email
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return Response::badRequest('El formato del correo electrónico no es válido');
+        }
+
+        // Si la descripción está vacía o solo contiene espacios, no se envía
+        if ($description === '' || ctype_space($description)) {
+            $description = null;
+        }
+
+        // Obtener variables de entorno de la base de datos
+        $host = $this->getEnvVar('DB_HOST') ?: 'localhost';
+        $port = (int)($this->getEnvVar('DB_PORT') ?: 3306);
+        $database = $this->getEnvVar('DB_DATABASE') ?: '';
+        $username = $this->getEnvVar('DB_USERNAME') ?: '';
+        $password = $this->getEnvVar('DB_PASSWORD') ?: '';
+
+        if ($database === '' || $username === '') {
+            return Response::serverError('Configuración de base de datos no disponible');
+        }
+
+        try {
+            // Conectar a la base de datos
+            $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $host, $port, $database);
+            $pdo = new \PDO($dsn, $username, $password, [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+            ]);
+
+            // Guardar el reporte en la base de datos
+            $stmt = $pdo->prepare('
+                INSERT INTO reportes (item_url, correo, comentario, fecha_publicacion)
+                VALUES (:item_url, :correo, :comentario, NOW())
+            ');
+
+            $stmt->execute([
+                'item_url' => $itemUrl !== '' ? $itemUrl : null,
+                'correo' => $email,
+                'comentario' => $description ?? ''
+            ]);
+
+            // Enviar correo electrónico
+            $this->sendReportEmail($email, $itemUrl, $description);
+
+            return Response::ok([
+                'success' => true,
+                'message' => 'Reporte enviado correctamente'
+            ]);
+
+        } catch (\PDOException $e) {
+            return Response::serverError('Error al guardar el reporte: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            return Response::serverError('Error al procesar el reporte: ' . $e->getMessage());
+        }
+    }
+
+    private function sendReportEmail(string $fromEmail, string $itemUrl, ?string $description): void
+    {
+        $to = 'support@neurofinder.org';
+        $subject = 'Reporte de artículo/noticia - NeuroFinder';
+        
+        $message = "Se ha recibido un nuevo reporte:\n\n";
+        $message .= "Artículo/Noticia reportado: " . $itemUrl . "\n";
+        $message .= "Correo del remitente: " . $fromEmail . "\n";
+        if ($description !== null && $description !== '') {
+            $message .= "\nDescripción:\n" . $description . "\n";
+        }
+        $message .= "\nFecha: " . date('Y-m-d H:i:s') . "\n";
+
+        $headers = [
+            'From' => $fromEmail,
+            'Reply-To' => $fromEmail,
+            'X-Mailer' => 'PHP/' . phpversion(),
+            'Content-Type' => 'text/plain; charset=UTF-8'
+        ];
+
+        $headerString = '';
+        foreach ($headers as $key => $value) {
+            $headerString .= $key . ': ' . $value . "\r\n";
+        }
+
+        mail($to, $subject, $message, $headerString);
     }
 }
 

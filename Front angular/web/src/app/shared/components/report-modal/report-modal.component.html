@@ -1,0 +1,35 @@
+<h2 mat-dialog-title>{{ 'REPORT.TITLE' | translate }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="reportForm" (ngSubmit)="onSubmit()">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>{{ 'REPORT.ARTICLE_URL' | translate }}</mat-label>
+      <input matInput formControlName="articleUrl" readonly>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>{{ 'REPORT.EMAIL' | translate }}</mat-label>
+      <input matInput type="email" formControlName="email" required>
+      @if (emailControl?.hasError('required') && emailControl?.touched) {
+        <mat-error>{{ 'REPORT.EMAIL_REQUIRED' | translate }}</mat-error>
+      }
+      @if (emailControl?.hasError('email') && emailControl?.touched) {
+        <mat-error>{{ 'REPORT.EMAIL_INVALID' | translate }}</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>{{ 'REPORT.DESCRIPTION' | translate }}</mat-label>
+      <textarea matInput formControlName="description" rows="4"></textarea>
+      <mat-hint>{{ 'REPORT.DESCRIPTION_HINT' | translate }}</mat-hint>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">{{ 'REPORT.CANCEL' | translate }}</button>
+  <button mat-flat-button color="primary" (click)="onSubmit()" [disabled]="!reportForm.valid">
+    {{ 'REPORT.SUBMIT' | translate }}
+  </button>
+</mat-dialog-actions>
+

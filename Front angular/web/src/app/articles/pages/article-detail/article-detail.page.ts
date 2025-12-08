@@ -5,6 +5,8 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { BehaviorSubject, Observable, Subject, catchError, of, switchMap, takeUntil, tap } from 'rxjs';
 
@@ -12,6 +14,7 @@ import { ApiService } from '../../../core/services/api.service';
 import { ArticleDetail } from '../../../core/models/content.models';
 import { ArticleCardComponent } from '../../../shared/components/article-card/article-card.component';
 import { SeoService } from '../../../core/services/seo.service';
+import { ReportModalComponent } from '../../../shared/components/report-modal/report-modal.component';
 
 @Component({
   standalone: true,
@@ -36,6 +39,8 @@ export class ArticleDetailPageComponent implements OnDestroy {
   private readonly api = inject(ApiService);
   private readonly translate = inject(TranslateService);
   private readonly seo = inject(SeoService);
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
   private readonly destroy$ = new Subject<void>();
   private readonly errorSubject = new BehaviorSubject<boolean>(false);
   private currentArticle: ArticleDetail | null = null;
@@ -95,6 +100,45 @@ export class ArticleDetailPageComponent implements OnDestroy {
         imageAlt
       });
     }
+  }
+
+  openReportModal(): void {
+    if (!this.currentArticle) {
+      return;
+    }
+
+    const dialogRef = this.dialog.open(ReportModalComponent, {
+      width: '500px',
+      data: { articleUrl: this.currentArticle.originalUrl }
+    });
+
+    dialogRef.componentInstance.reportSubmitted.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(({ email, description }) => {
+      this.api.reportItem({
+        itemUrl: this.currentArticle!.originalUrl,
+        email,
+        description
+      }).pipe(
+        takeUntil(this.destroy$)
+      ).subscribe({
+        next: () => {
+          this.snackBar.open(
+            this.translate.instant('REPORT.SUCCESS'),
+            this.translate.instant('REPORT.CLOSE'),
+            { duration: 3000 }
+          );
+          dialogRef.close();
+        },
+        error: () => {
+          this.snackBar.open(
+            this.translate.instant('REPORT.ERROR'),
+            this.translate.instant('REPORT.CLOSE'),
+            { duration: 5000 }
+          );
+        }
+      });
+    });
   }
 }
 

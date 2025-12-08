@@ -92,6 +92,20 @@
     "YEAR": "2025 NeuroFinder",
     "TAGLINE": "Buscador avanzado de alzhéimer."
   },
+  "REPORT": {
+    "TITLE": "Reportar artículo/noticia",
+    "ARTICLE_URL": "Artículo a reportar",
+    "EMAIL": "Correo electrónico",
+    "EMAIL_REQUIRED": "El correo electrónico es obligatorio",
+    "EMAIL_INVALID": "El formato del correo electrónico no es válido",
+    "DESCRIPTION": "Descripción del problema",
+    "DESCRIPTION_HINT": "Opcional: Describe qué problema has encontrado",
+    "CANCEL": "Cancelar",
+    "SUBMIT": "Enviar reporte",
+    "SUCCESS": "Reporte enviado correctamente",
+    "ERROR": "Error al enviar el reporte. Por favor, inténtalo más tarde.",
+    "CLOSE": "Cerrar"
+  },
   "ERROR": {
     "GENERIC": "Opps parece que algo ha ido mal, inténtalo más tarde."
   },

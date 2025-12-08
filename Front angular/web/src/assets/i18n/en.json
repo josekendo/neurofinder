@@ -92,6 +92,20 @@
     "YEAR": "2025 NeuroFinder",
     "TAGLINE": "Advanced Alzheimer search engine."
   },
+  "REPORT": {
+    "TITLE": "Report article/news",
+    "ARTICLE_URL": "Article to report",
+    "EMAIL": "Email address",
+    "EMAIL_REQUIRED": "Email address is required",
+    "EMAIL_INVALID": "Invalid email format",
+    "DESCRIPTION": "Problem description",
+    "DESCRIPTION_HINT": "Optional: Describe what issue you found",
+    "CANCEL": "Cancel",
+    "SUBMIT": "Submit report",
+    "SUCCESS": "Report submitted successfully",
+    "ERROR": "Error submitting report. Please try again later.",
+    "CLOSE": "Close"
+  },
   "ERROR": {
     "GENERIC": "Oops, something went wrong. Please try again later."
   },

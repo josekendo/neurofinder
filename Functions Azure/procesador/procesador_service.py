@@ -1,12 +1,12 @@
 """
-Servicio procesador que lee archivos JSON del storage y los compacta en una única respuesta.
+Servicio procesador que lee archivos JSON del storage, los compacta y genera el índice FAISS.
 Lee todos los archivos que NO tengan "ok" en el nombre.
 """
 
 import os
 import json
 import logging
-from typing import List, Dict
+from typing import List, Dict, Optional
 from azure.storage.blob import BlobServiceClient
 from azure.core.exceptions import AzureError
 
@@ -181,10 +181,10 @@ class ProcesadorService:
     
     def compactar_archivos(self) -> Dict:
         """
-        Lee todos los archivos pendientes y los compacta en una única respuesta JSON.
+        Lee todos los archivos pendientes, los compacta y genera el índice FAISS.
         
         Returns:
-            Diccionario con todos los items compactados y estadísticas
+            Diccionario con todos los items compactados, estadísticas y resultado del índice FAISS
         """
         logging.info("=== INICIANDO PROCESAMIENTO ===")
         
@@ -197,7 +197,8 @@ class ProcesadorService:
                 "items": [],
                 "total_items": 0,
                 "archivos_procesados": 0,
-                "archivos": []
+                "archivos": [],
+                "indice_faiss": None
             }
         
         # Leer todos los archivos y compactar
@@ -218,10 +219,57 @@ class ProcesadorService:
         logging.info(f"Total de items compactados: {len(todos_items)}")
         logging.info(f"Archivos procesados: {len(archivos_procesados)}")
         
+        # Generar índice FAISS con los items compactados
+        resultado_indice = None
+        if todos_items:
+            logging.info("=== GENERANDO ÍNDICE FAISS ===")
+            resultado_indice = self._generar_indice_faiss(todos_items)
+        
         return {
             "items": todos_items,
             "total_items": len(todos_items),
             "archivos_procesados": len(archivos_procesados),
-            "archivos": archivos_procesados
+            "archivos": archivos_procesados,
+            "indice_faiss": resultado_indice
         }
+    
+    def _generar_indice_faiss(self, items: List[Dict]) -> Optional[Dict]:
+        """
+        Genera el índice FAISS usando el servicio evaluador.
+        
+        Args:
+            items: Lista de items para indexar
+        
+        Returns:
+            Diccionario con resultado del índice FAISS o None si hay error
+        """
+        try:
+            # Importar evaluador (importación dinámica para evitar dependencias circulares)
+            import sys
+            import os
+            evaluador_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'evaluador')
+            if evaluador_path not in sys.path:
+                sys.path.insert(0, evaluador_path)
+            
+            from evaluador_service import EvaluadorService
+            
+            # Crear servicio evaluador
+            evaluador = EvaluadorService()
+            
+            # Ejecutar evaluación (construye índice y lo sube al storage)
+            resultado = evaluador.ejecutar_evaluacion(items)
+            
+            if resultado.get('error'):
+                logging.error(f"Error al generar índice FAISS: {resultado.get('error')}")
+                return None
+            
+            logging.info("Índice FAISS generado y subido exitosamente")
+            return resultado
+            
+        except ImportError as e:
+            logging.error(f"Error al importar evaluador_service: {e}", exc_info=True)
+            return None
+        except Exception as e:
+            logging.error(f"Error al generar índice FAISS: {e}", exc_info=True)
+            return None
 

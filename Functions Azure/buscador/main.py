@@ -12,18 +12,17 @@ from dotenv import load_dotenv
 import logging
 from buscador_service import BuscadorService
 
-# Configurar logging básico para ver la salida
-logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
-
 # Cargar variables de entorno desde .env (en el directorio raíz)
 root_dir = Path(__file__).parent.parent
 env_path = root_dir / '.env'
 if env_path.exists():
     load_dotenv(env_path)
-    logging.info(f"✅ Variables de entorno cargadas desde: {env_path}")
+    print(f"✅ Variables de entorno cargadas desde: {env_path}")
 else:
-    logging.warning(f"⚠️  Archivo .env no encontrado en: {env_path}")
-    logging.info("   Usando variables del entorno del sistema...")
+    load_dotenv()  # Intenta cargar desde el directorio actual
+    print("⚠️  Archivo .env no encontrado, usando variables del sistema...")
+
+logging.basicConfig(level=logging.INFO)
 
 # Agregar el directorio actual al path para importar el servicio
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

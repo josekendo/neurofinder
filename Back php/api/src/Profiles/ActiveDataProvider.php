@@ -17,9 +17,96 @@ final class ActiveDataProvider implements DataProviderInterface
         throw new \RuntimeException('El perfil active aún no está implementado.');
     }
 
-    public function getNews(): array
+    public function getNews(?string $language = null): array
     {
-        throw new \RuntimeException('El perfil active aún no está implementado.');
+        // Obtener variables de entorno de la base de datos
+        $host = $this->getEnvVar('DB_HOST') ?: 'localhost';
+        $port = (int)($this->getEnvVar('DB_PORT') ?: 3306);
+        $database = $this->getEnvVar('DB_DATABASE') ?: '';
+        $username = $this->getEnvVar('DB_USERNAME') ?: '';
+        $password = $this->getEnvVar('DB_PASSWORD') ?: '';
+
+        if ($database === '' || $username === '') {
+            throw new \RuntimeException('Variables de entorno de base de datos no configuradas.');
+        }
+
+        // Si no se especifica idioma, usar 'en' por defecto
+        $lang = $language ?? 'en';
+
+        // Crear conexión PDO
+        $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $host, $port, $database);
+        
+        try {
+            $pdo = new \PDO($dsn, $username, $password, [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+            ]);
+
+            // Obtener las últimas noticias ordenadas por fecha de publicación (más recientes primero)
+            // Las noticias están en la tabla items con tipo = 'news'
+            // El campo language puede ser NULL para noticias, así que incluimos:
+            // - Noticias con el idioma solicitado
+            // - Noticias sin idioma específico (language IS NULL) solo si se solicita inglés (por defecto)
+            if ($lang === 'en') {
+                // Si es inglés (por defecto), incluir también noticias sin idioma específico
+                $sql = "SELECT 
+                            url as id,
+                            title,
+                            summary,
+                            published_at as publishedAt,
+                            url,
+                            image_url as imageUrl,
+                            tags
+                        FROM items 
+                        WHERE tipo = 'news'
+                        AND (language = :language OR language IS NULL)
+                        ORDER BY published_at DESC
+                        LIMIT 50";
+            } else {
+                // Para otros idiomas, solo mostrar noticias con ese idioma específico
+                $sql = "SELECT 
+                            url as id,
+                            title,
+                            summary,
+                            published_at as publishedAt,
+                            url,
+                            image_url as imageUrl,
+                            tags
+                        FROM items 
+                        WHERE tipo = 'news'
+                        AND language = :language
+                        ORDER BY published_at DESC
+                        LIMIT 50";
+            }
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([':language' => $lang]);
+            $results = $stmt->fetchAll();
+
+            // Convertir los resultados al formato esperado
+            $news = [];
+            foreach ($results as $row) {
+                // Parsear tags JSON
+                $tags = json_decode($row['tags'] ?? '[]', true);
+                if (!is_array($tags)) {
+                    $tags = [];
+                }
+
+                $news[] = [
+                    'id' => $row['id'],
+                    'title' => $row['title'],
+                    'summary' => $row['summary'] ?? '',
+                    'publishedAt' => $row['publishedAt'],
+                    'url' => $row['url'],
+                    'imageUrl' => $row['imageUrl'] ?? null,
+                    'tags' => $tags
+                ];
+            }
+
+            return $news;
+        } catch (\PDOException $e) {
+            throw new \RuntimeException('Error al conectar con la base de datos: ' . $e->getMessage(), 0, $e);
+        }
     }
 
     public function getMetrics(): array

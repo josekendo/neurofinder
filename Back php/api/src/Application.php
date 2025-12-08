@@ -65,7 +65,17 @@ final class Application
         }
 
         if ($method === 'GET' && $path === '/news/latest') {
-            return Response::ok($this->provider->getNews());
+            // Obtener idioma de query string, por defecto 'en' (inglés)
+            $language = $_GET['language'] ?? null;
+            if ($language !== null) {
+                $language = trim((string)$language);
+                if ($language === '') {
+                    $language = null;
+                }
+            }
+            // Si no se especifica idioma, usar 'en' por defecto
+            $language = $language ?? 'en';
+            return Response::ok($this->provider->getNews($language));
         }
 
         if ($method === 'POST' && $path === '/search') {

@@ -142,8 +142,13 @@ final class MockDataProvider implements DataProviderInterface
         return null;
     }
 
-    public function getNews(): array
+    public function getNews(?string $language = null): array
     {
+        // Si no se especifica idioma, usar 'en' por defecto
+        $lang = $language ?? 'en';
+        
+        // Filtrar noticias por idioma (en el mock, todas están en español por defecto)
+        // Por ahora retornamos todas las noticias, pero se puede filtrar si se añade campo language
         return $this->news;
     }
 

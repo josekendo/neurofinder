@@ -17,9 +17,10 @@ interface DataProviderInterface
     public function getArticle(string $id): ?array;
 
     /**
+     * @param string|null $language Idioma para filtrar las noticias (por defecto 'en' si es null)
      * @return array<int, array<string, mixed>>
      */
-    public function getNews(): array;
+    public function getNews(?string $language = null): array;
 
     /**
      * @return array<string, mixed>

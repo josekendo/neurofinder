@@ -37,6 +37,14 @@ paths:
   /news/latest:
     get:
       summary: Listar noticias recientes verificadas
+      parameters:
+        - name: language
+          in: query
+          description: Idioma para filtrar las noticias (por defecto 'en' si no se especifica)
+          required: false
+          schema:
+            type: string
+            example: en
       responses:
         '200':
           description: Colección de noticias mock

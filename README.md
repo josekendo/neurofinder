@@ -15,19 +15,12 @@ NeuroFinder es una iniciativa de investigación orientada a centralizar evidenci
 
 ## Estructura del repositorio
 
-```text
-Back php/
-  ├── api/                # Código fuente de la API REST (PHP 8.2)
-  └── Explicacion.md      # Detalles funcionales y de despliegue del backend
-Front angular/
-  ├── web/                # Proyecto Angular (src/, assets/, dist/)
-  └── Explicacion.md      # Guía de despliegue y arquitectura del frontend
-Functions Azure/
-  ├── function_app.py     # Registro de las funciones HTTP y rutas disponibles
-  ├── requirements.txt    # Dependencias Python para Azure Functions
-  ├── host.json           # Configuración global de Functions
-  └── */                  # Directorios por función (buscador, procesador, etc.)
-```
+El proyecto está organizado en módulos independientes que se comunican entre sí:
+
+- **[`Back php/`](Back%20php/README.md)** - API REST en PHP que orquesta las peticiones del frontend y coordina con Azure Functions
+- **[`Front angular/`](Front%20angular/README.md)** - Aplicación web Angular que proporciona la interfaz de usuario
+- **[`Functions Azure/`](Functions%20Azure/README.md)** - Funciones serverless en Python para recopilación, procesamiento y búsqueda semántica
+- **[`Pruebas/`](Pruebas/README.md)** - Notebooks de experimentación y pruebas con servicios externos
 
 ## Requisitos previos
 
@@ -108,7 +101,16 @@ Recuerda configurar la cadena de conexión `AzureWebJobsStorage` mediante variab
 - Documentar los esquemas de datos y el modelo de embeddings que utilizarán las funciones de búsqueda.
 - Añadir guías de contribución (`CONTRIBUTING.md`) y plantillas de incidencias para facilitar la colaboración.
 
+## Documentación por módulo
+
+Para entender en detalle cada parte del sistema y cómo se comunican:
+
+- **[Backend PHP](Back%20php/README.md)** - API REST y lógica de negocio
+- **[Frontend Angular](Front%20angular/README.md)** - Interfaz de usuario y experiencia
+- **[Azure Functions](Functions%20Azure/README.md)** - Procesamiento serverless y búsqueda semántica
+- **[Pruebas](Pruebas/README.md)** - Documentación de experimentación
+
 ---
 
-Para más detalles específicos de cada módulo consulta los documentos `Explicacion.md` dentro de las carpetas `Back php` y `Front angular`. Cualquier duda adicional puede dirigirse al equipo responsable del TFM.
+Para más detalles técnicos específicos consulta también los documentos `Explicacion.md` dentro de las carpetas `Back php` y `Front angular`. Cualquier duda adicional puede dirigirse al equipo responsable del TFM.
 

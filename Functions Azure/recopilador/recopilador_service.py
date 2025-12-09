@@ -178,6 +178,7 @@ class RecopiladorService:
         Returns:
             Tuple con (fecha_inicio, fecha_fin) en formato YYYY-MM-DD
         """
+        logging.info(f'Recopilador fechas en obtener fechas: week={week}, year={year}')
         hoy = datetime.now()
         
         if year:
@@ -191,11 +192,34 @@ class RecopiladorService:
         if week:
             try:
                 week_int = int(week)
-                # Calcular fecha de inicio de la semana ISO
+                # Calcular fecha de inicio de la semana ISO manualmente
                 # La semana 1 es la primera semana con al menos 4 días en el año
-                fecha_inicio = datetime.strptime(f'{year_int}-W{week_int:02d}-1', '%G-W%V-%u')
+                # Encontrar el 4 de enero del año (siempre está en la semana 1)
+                jan_4 = datetime(year_int, 1, 4)
+                # El lunes de la semana que contiene el 4 de enero es el inicio de la semana 1
+                # weekday() devuelve 0=lunes, 6=domingo
+                week1_start = jan_4 - timedelta(days=jan_4.weekday())
+                # Calcular el inicio de la semana solicitada
+                fecha_inicio = week1_start + timedelta(weeks=week_int - 1)
                 fecha_fin = fecha_inicio + timedelta(days=6)
-            except ValueError:
+                
+                # Validar que la fecha de inicio pertenece al año especificado
+                # Si la semana calculada cae en otro año, la semana no existe en ese año
+                # Usar la última semana del año especificado
+                if fecha_inicio.year != year_int:
+                    logging.warning(f"La semana {week_int} del año {year_int} no existe (la fecha calculada cae en {fecha_inicio.year}). Usando última semana del año {year_int}.")
+                    # Calcular la última semana del año especificado
+                    # La última semana ISO es la que contiene el 28 de diciembre
+                    dec_28 = datetime(year_int, 12, 28)
+                    # El lunes de la semana que contiene el 28 de diciembre
+                    last_week_start = dec_28 - timedelta(days=dec_28.weekday())
+                    fecha_inicio = last_week_start
+                    fecha_fin = fecha_inicio + timedelta(days=6)
+                    # Asegurar que fecha_fin no exceda el año
+                    if fecha_fin.year > year_int:
+                        fecha_fin = datetime(year_int, 12, 31)
+            except (ValueError, OverflowError) as e:
+                logging.warning(f"Error al calcular fecha de semana {week_int} del año {year_int}: {e}. Usando semana actual.")
                 # Si falla, usar semana actual
                 fecha_inicio = hoy - timedelta(days=hoy.weekday())
                 fecha_fin = fecha_inicio + timedelta(days=6)
@@ -1015,6 +1039,7 @@ Traducción:"""
         logging.info("=== INICIANDO RECOPILACIÓN ===")
         
         # Obtener fechas de la semana
+        logging.info(f'Recopilador fechas: week={week}, year={year}')
         fecha_desde, fecha_hasta = self.obtener_fechas_semana(week, year)
         logging.info(f"Buscando artículos y noticias del {fecha_desde} al {fecha_hasta}")
         

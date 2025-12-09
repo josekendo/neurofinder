@@ -15,19 +15,12 @@ NeuroFinder is a research initiative focused on centralising clinical evidence a
 
 ## Repository Structure
 
-```text
-Back php/
-  ├── api/                # REST API source (PHP 8.2)
-  └── Explicacion.md      # Functional details and deployment notes for the backend
-Front angular/
-  ├── web/                # Angular project (src/, assets/, dist/)
-  └── Explicacion.md      # Deployment and architecture guide for the frontend
-Functions Azure/
-  ├── function_app.py     # Registry of HTTP functions and available routes
-  ├── requirements.txt    # Python dependencies for Azure Functions
-  ├── host.json           # Global Functions configuration
-  └── */                  # Per-function directories (search, ingestion, processing, etc.)
-```
+The project is organized into independent modules that communicate with each other:
+
+- **[`Back php/`](Back%20php/README.md)** - PHP REST API that orchestrates frontend requests and coordinates with Azure Functions
+- **[`Front angular/`](Front%20angular/README.md)** - Angular web application providing the user interface
+- **[`Functions Azure/`](Functions%20Azure/README.md)** - Python serverless functions for data collection, processing and semantic search
+- **[`Pruebas/`](Pruebas/README.md)** - Experimentation notebooks and external service testing
 
 ## Prerequisites
 
@@ -108,7 +101,16 @@ Remember to configure the `AzureWebJobsStorage` connection string via local envi
 - Document data schemas and the embedding model used by search-related functions.
 - Add contribution guidelines (`CONTRIBUTING.md`) and issue templates to ease collaboration.
 
+## Module Documentation
+
+To understand each part of the system in detail and how they communicate:
+
+- **[Backend PHP](Back%20php/README.md)** - REST API and business logic
+- **[Frontend Angular](Front%20angular/README.md)** - User interface and experience
+- **[Azure Functions](Functions%20Azure/README.md)** - Serverless processing and semantic search
+- **[Pruebas](Pruebas/README.md)** - Experimentation documentation
+
 ---
 
-For module-specific details check the `Explicacion.md` documents inside `Back php` and `Front angular`. For any additional questions, contact the team responsible for the Master’s project.
+For additional technical details, also check the `Explicacion.md` documents inside `Back php` and `Front angular`. For any additional questions, contact the team responsible for the Master's project.
 

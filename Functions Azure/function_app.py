@@ -24,6 +24,8 @@ def recopilador(req: func.HttpRequest) -> func.HttpResponse:
         # Obtener parámetros opcionales de la query string
         week_param = req.params.get('week')
         year_param = req.params.get('year')
+
+        logging.info(f'Recopilador parametros: week={week_param}, year={year_param}')
         
         # Crear servicio de recopilación
         service = RecopiladorService()

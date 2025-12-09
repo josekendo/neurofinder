@@ -342,11 +342,16 @@ class RecopiladorService:
             # URL de PubMed
             url = f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
             
+            # Detectar idioma inicial del artículo (los artículos de PubMed suelen ser en inglés)
+            # Se normalizará después en procesar_con_ia
+            language_inicial = "en"  # Por defecto inglés para artículos científicos de PubMed
+            
             return {
                 "pmid": pmid,
                 "titulo": titulo,
                 "fecha_publicacion": fecha_parseada or fecha_pub,
                 "revista": revista,
+                "language": language_inicial,
                 "abstract": abstract,
                 "doi": doi,
                 "url": url,
@@ -430,7 +435,7 @@ class RecopiladorService:
                         "image_url": noticia.get("image_url", ""),
                         "fecha_publicacion": noticia.get("published_at", ""),
                         "source": noticia.get("source", ""),
-                        "language": noticia.get("language", ""),
+                        "language": self._normalizar_idioma(noticia.get("language", ""), "en"),
                         "tipo": "news"
                     }
                     noticias_formateadas.append(noticia_formateada)
@@ -461,6 +466,9 @@ class RecopiladorService:
         
         if not self.azure_openai_endpoint or not self.azure_openai_api_key:
             logging.warning("Azure OpenAI no configurado. Saltando procesamiento con IA.")
+            # Asegurar que el item tenga idioma normalizado
+            language = item.get("language", "en")
+            item["language"] = self._normalizar_idioma(language, "en")
             # Mantener tags por defecto
             return item
         
@@ -495,8 +503,8 @@ class RecopiladorService:
             
             # Usar idioma del item si está disponible, sino el detectado
             idioma_item = item.get("language", idioma_detectado)
-            if idioma_item not in ["es", "en"]:
-                idioma_item = idioma_detectado
+            # Normalizar idioma
+            idioma_item = self._normalizar_idioma(idioma_item, idioma_detectado)
             item["language"] = idioma_item
             
             # Inicializar valores por defecto
@@ -563,7 +571,8 @@ class RecopiladorService:
                 item["source"] = item.get("revista", "") or None
                 
                 # Language: intentar detectar o usar "en" por defecto
-                item["language"] = metricas.get("language", "en")
+                language_metrics = metricas.get("language", item.get("language", "en"))
+                item["language"] = self._normalizar_idioma(language_metrics, "en")
                 
                 # Score: se calculará después si es necesario
                 item["score"] = None
@@ -575,7 +584,42 @@ class RecopiladorService:
             
         except Exception as e:
             logging.error(f"Error al procesar con IA: {e}", exc_info=True)
+            # Asegurar que el item tenga idioma normalizado incluso si hay error
+            language = item.get("language", "en")
+            item["language"] = self._normalizar_idioma(language, "en")
             return item
+    
+    def _normalizar_idioma(self, language: str, idioma_default: str = "en") -> str:
+        """
+        Normaliza el campo language para asegurar que siempre tenga un valor válido.
+        
+        Args:
+            language: Idioma a normalizar (puede ser string, None, o vacío)
+            idioma_default: Idioma por defecto si no se puede determinar
+            
+        Returns:
+            Código de idioma normalizado (es, en, fr, de, it, pt)
+        """
+        # Idiomas válidos
+        idiomas_validos = ['es', 'en', 'fr', 'de', 'it', 'pt']
+        
+        # Si es None o no es string, usar default
+        if not language or not isinstance(language, str):
+            return idioma_default if idioma_default in idiomas_validos else 'en'
+        
+        # Limpiar y normalizar
+        language = language.strip().lower()
+        
+        # Si contiene múltiples idiomas separados por coma, tomar el primero
+        if ',' in language:
+            language = language.split(',')[0].strip()
+        
+        # Validar contra idiomas válidos
+        if language in idiomas_validos:
+            return language
+        
+        # Si no es válido, usar default
+        return idioma_default if idioma_default in idiomas_validos else 'en'
     
     def _generar_resumen(self, client: AzureOpenAI, texto: str, idioma: str = "es") -> str:
         """Genera un resumen del texto usando Azure OpenAI en el idioma especificado"""
@@ -754,10 +798,9 @@ Traducción:"""
         if not self.azure_openai_endpoint or not self.azure_openai_api_key:
             return None
         
-        # Obtener idioma original
+        # Obtener idioma original y normalizarlo
         idioma_original = item.get("language", "en")
-        if idioma_original not in ["es", "en"]:
-            idioma_original = "en"  # Por defecto inglés
+        idioma_original = self._normalizar_idioma(idioma_original, "en")
         
         # Si ya está en el idioma destino, no hacer nada
         if idioma_original == idioma_destino:
@@ -891,14 +934,19 @@ Traducción:"""
             source = item.get("source", "") or item.get("revista", "")
             item_formateado["source"] = source[:255] if source else None
             
+            # Normalizar idioma para asegurar que siempre tenga valor válido
             language = item.get("language", "en")
-            item_formateado["language"] = language[:10] if language else "en"
+            language_normalizado = self._normalizar_idioma(language, "en")
+            item_formateado["language"] = language_normalizado
             
             item_formateado["key_points"] = key_points if key_points else None
         
         # Campos específicos de noticias
         if item.get("tipo") == "news":
             item_formateado["image_url"] = item.get("image_url", "")[:1000] if item.get("image_url") else None
+            # Las noticias también deben tener idioma siempre
+            language_news = item.get("language", "en")
+            item_formateado["language"] = self._normalizar_idioma(language_news, "en")
         
         return item_formateado
     
@@ -992,7 +1040,7 @@ Traducción:"""
             # Procesar con IA
             item_procesado = self.procesar_con_ia(item)
             
-            # Detectar idioma original
+            # Detectar idioma original y normalizarlo
             idioma_original = item_procesado.get("language", "en")
             if idioma_original not in ["es", "en"]:
                 # Intentar detectar desde el texto
@@ -1004,9 +1052,13 @@ Traducción:"""
                     texto_lower = texto_deteccion.lower()
                     count_es = sum(1 for palabra in palabras_es if f" {palabra} " in f" {texto_lower} ")
                     count_en = sum(1 for palabra in palabras_en if f" {palabra} " in f" {texto_lower} ")
-                    idioma_original = "es" if count_es > count_en else "en"
+                    idioma_detectado = "es" if count_es > count_en else "en"
+                    idioma_original = self._normalizar_idioma(idioma_original, idioma_detectado)
                 else:
-                    idioma_original = "en"
+                    idioma_original = self._normalizar_idioma(idioma_original, "en")
+            else:
+                # Asegurar que está normalizado
+                idioma_original = self._normalizar_idioma(idioma_original, "en")
             
             item_procesado["language"] = idioma_original
             

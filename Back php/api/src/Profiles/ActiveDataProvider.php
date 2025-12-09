@@ -17,7 +17,7 @@ final class ActiveDataProvider implements DataProviderInterface
         throw new \RuntimeException('El perfil active aún no está implementado.');
     }
 
-    public function getNews(?string $language = null): array
+    public function getNews(?string $language = null, int $limit = 50): array
     {
         // Obtener variables de entorno de la base de datos
         $host = $this->getEnvVar('DB_HOST') ?: 'localhost';
@@ -57,11 +57,11 @@ final class ActiveDataProvider implements DataProviderInterface
                             url,
                             image_url as imageUrl,
                             tags
-                        FROM items 
-                        WHERE tipo = 'news'
-                        AND (language = :language OR language IS NULL)
-                        ORDER BY published_at DESC
-                        LIMIT 50";
+                    FROM items 
+                    WHERE tipo = 'news'
+                    AND (language = :language OR language IS NULL)
+                    ORDER BY published_at DESC
+                    LIMIT :limit";
             } else {
                 // Para otros idiomas, solo mostrar noticias con ese idioma específico
                 $sql = "SELECT 
@@ -76,11 +76,16 @@ final class ActiveDataProvider implements DataProviderInterface
                         WHERE tipo = 'news'
                         AND language = :language
                         ORDER BY published_at DESC
-                        LIMIT 50";
+                        LIMIT :limit";
             }
             
+            // Asegurar que el límite sea válido (entre 1 y 100)
+            $limit = max(1, min(100, $limit));
+            
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([':language' => $lang]);
+            $stmt->bindValue(':language', $lang, \PDO::PARAM_STR);
+            $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+            $stmt->execute();
             $results = $stmt->fetchAll();
 
             // Convertir los resultados al formato esperado

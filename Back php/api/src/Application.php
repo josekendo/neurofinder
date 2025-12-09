@@ -75,7 +75,17 @@ final class Application
             }
             // Si no se especifica idioma, usar 'en' por defecto
             $language = $language ?? 'en';
-            return Response::ok($this->provider->getNews($language));
+            
+            // Obtener límite de query string, por defecto 50
+            $limit = 50;
+            if (isset($_GET['limit'])) {
+                $limitParam = (int)$_GET['limit'];
+                if ($limitParam > 0 && $limitParam <= 100) {
+                    $limit = $limitParam;
+                }
+            }
+            
+            return Response::ok($this->provider->getNews($language, $limit));
         }
 
         if ($method === 'POST' && $path === '/search') {

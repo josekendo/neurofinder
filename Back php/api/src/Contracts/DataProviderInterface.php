@@ -18,9 +18,10 @@ interface DataProviderInterface
 
     /**
      * @param string|null $language Idioma para filtrar las noticias (por defecto 'en' si es null)
+     * @param int $limit Número máximo de noticias a retornar (por defecto 50)
      * @return array<int, array<string, mixed>>
      */
-    public function getNews(?string $language = null): array;
+    public function getNews(?string $language = null, int $limit = 50): array;
 
     /**
      * @return array<string, mixed>

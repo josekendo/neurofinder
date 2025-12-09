@@ -19,8 +19,17 @@ export class ApiService {
     return this.http.get<ArticleDetail>(`${this.baseUrl}/articles/${id}`);
   }
 
-  getNews(): Observable<NewsItem[]> {
-    return this.http.get<NewsItem[]>(`${this.baseUrl}/news/latest`);
+  getNews(language?: string, limit?: number): Observable<NewsItem[]> {
+    const params = new URLSearchParams();
+    if (language) {
+      params.append('language', language);
+    }
+    if (limit !== undefined && limit > 0) {
+      params.append('limit', limit.toString());
+    }
+    const queryString = params.toString();
+    const url = `${this.baseUrl}/news/latest${queryString ? '?' + queryString : ''}`;
+    return this.http.get<NewsItem[]>(url);
   }
 
   getMetrics(): Observable<MetricsSnapshot> {

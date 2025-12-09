@@ -147,11 +147,40 @@ function validarFecha(string $fecha): ?string {
     return null;
 }
 
+// Función para añadir hash de idioma a la URL
+function añadirHashIdiomaUrl(string $url, ?string $language): string {
+    // Si no hay idioma, retornar URL original
+    if (empty($language)) {
+        return $url;
+    }
+    
+    // Normalizar idioma (solo primeros 2 caracteres, minúsculas)
+    $lang = strtolower(substr(trim($language), 0, 2));
+    if (empty($lang)) {
+        return $url;
+    }
+    
+    // Si la URL ya tiene hash, removerlo primero
+    $urlSinHash = preg_replace('/#[\w-]+$/', '', $url);
+    
+    // Añadir hash del idioma al final
+    $urlConHash = $urlSinHash . '#' . $lang;
+    
+    // Asegurar que no exceda el límite de 767 caracteres
+    if (strlen($urlConHash) > 767) {
+        // Recortar la URL base para dejar espacio para el hash
+        $longitudMaxima = 767 - strlen('#' . $lang);
+        $urlConHash = substr($urlSinHash, 0, $longitudMaxima) . '#' . $lang;
+    }
+    
+    return $urlConHash;
+}
+
 // Función para insertar/actualizar un item en la BD
 function guardarItem(PDO $pdo, array $item, bool $isCli): bool {
     try {
-        // Preparar datos
-        $url = substr($item['url'] ?? '', 0, 767); // Límite de BD
+        // Obtener URL base y tipo
+        $urlBase = $item['url'] ?? '';
         $tipo = in_array($item['tipo'] ?? '', ['article', 'news'], true) ? $item['tipo'] : 'article';
         $title = substr($item['title'] ?? '', 0, 500);
         $published_at_raw = $item['published_at'] ?? date('Y-m-d');
@@ -163,13 +192,31 @@ function guardarItem(PDO $pdo, array $item, bool $isCli): bool {
         if ($published_at === null) {
             // Si no se puede validar, intentar usar la fecha actual como fallback
             $published_at = date('Y-m-d');
-            writeOutput("  ⚠ Item con URL '{$url}': fecha inválida '{$published_at_raw}', usando fecha actual\n", $isCli);
         }
         
         // Validar campos requeridos
-        if (empty($url) || empty($title)) {
+        if (empty($urlBase) || empty($title)) {
             writeOutput("  ⚠ Item omitido: faltan campos requeridos (URL o título)\n", $isCli);
             return false;
+        }
+        
+        // Extraer idioma (siempre debe tener valor, por defecto 'en')
+        // IMPORTANTE: El idioma se guarda siempre en la BD, tanto para artículos como para noticias
+        // Las noticias también reciben traducción y deben tener su idioma guardado
+        $language = 'en'; // Por defecto inglés
+        if (!empty($item['language'])) {
+            $language = substr(trim($item['language']), 0, 10);
+            // Normalizar a minúsculas y validar que sea un código válido
+            $language = strtolower($language);
+            // Si no es un código válido conocido, usar 'en' por defecto
+            $idiomasValidos = ['es', 'en', 'fr', 'de', 'it', 'pt'];
+            if (!in_array($language, $idiomasValidos, true)) {
+                $language = 'en';
+            }
+        }
+        // Garantizar que el idioma nunca sea null o vacío
+        if (empty($language)) {
+            $language = 'en';
         }
         
         // Campos específicos de artículos
@@ -177,7 +224,6 @@ function guardarItem(PDO $pdo, array $item, bool $isCli): bool {
         $processed_at = null;
         $score = null;
         $source = null;
-        $language = null;
         $key_points = null;
         
         if ($tipo === 'article') {
@@ -187,13 +233,17 @@ function guardarItem(PDO $pdo, array $item, bool $isCli): bool {
                 $excerpt = substr($excerpt, 0, 65535);
             }
             
-            // Validar fecha de procesamiento
+            // Validar fecha de procesamiento - si no hay, usar fecha actual
             $processed_at_raw = $item['processed_at'] ?? null;
             if ($processed_at_raw !== null) {
                 $processed_at = validarFecha($processed_at_raw);
                 if ($processed_at === null) {
-                    $processed_at = null; // Si no es válida, dejamos null
+                    // Si no es válida, usar fecha actual
+                    $processed_at = date('Y-m-d');
                 }
+            } else {
+                // Si no hay fecha de procesado, usar la fecha actual
+                $processed_at = date('Y-m-d');
             }
             
             // Validar score (debe estar entre 0 y 1, o ser null)
@@ -204,7 +254,6 @@ function guardarItem(PDO $pdo, array $item, bool $isCli): bool {
             }
             
             $source = !empty($item['source']) ? substr($item['source'], 0, 255) : null;
-            $language = !empty($item['language']) ? substr($item['language'], 0, 10) : null;
             $key_points = is_array($item['key_points'] ?? null) ? json_encode($item['key_points'], JSON_UNESCAPED_UNICODE) : null;
         }
         
@@ -212,6 +261,17 @@ function guardarItem(PDO $pdo, array $item, bool $isCli): bool {
         $image_url = null;
         if ($tipo === 'news') {
             $image_url = !empty($item['image_url']) ? substr($item['image_url'], 0, 1000) : null;
+            // Las noticias no tienen processed_at según el esquema de BD
+            $processed_at = null;
+        }
+        
+        // Añadir hash de idioma a la URL (para artículos y noticias)
+        $url = añadirHashIdiomaUrl($urlBase, $language);
+        
+        // Asegurar que la URL no exceda el límite de BD
+        if (strlen($url) > 767) {
+            $url = substr($url, 0, 767);
+            writeOutput("  ⚠ URL recortada por exceder límite: " . substr($urlBase, 0, 100) . "...\n", $isCli);
         }
         
         // Validar summary (es TEXT en BD, no hay límite estricto)
@@ -263,11 +323,15 @@ function guardarItem(PDO $pdo, array $item, bool $isCli): bool {
         return true;
         
     } catch (PDOException $e) {
-        $urlItem = substr($item['url'] ?? 'desconocida', 0, 100);
+        // Intentar obtener la URL final si está disponible, sino usar la base
+        $urlFinal = $url ?? $urlBase ?? ($item['url'] ?? 'desconocida');
+        $urlItem = substr($urlFinal, 0, 100);
         writeOutput("  ❌ Error al guardar item (URL: {$urlItem}): " . $e->getMessage() . "\n", $isCli);
         return false;
     } catch (Exception $e) {
-        $urlItem = substr($item['url'] ?? 'desconocida', 0, 100);
+        // Intentar obtener la URL final si está disponible, sino usar la base
+        $urlFinal = $url ?? $urlBase ?? ($item['url'] ?? 'desconocida');
+        $urlItem = substr($urlFinal, 0, 100);
         writeOutput("  ❌ Error al procesar item (URL: {$urlItem}): " . $e->getMessage() . "\n", $isCli);
         return false;
     }

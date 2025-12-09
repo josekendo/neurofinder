@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { Subject, takeUntil } from 'rxjs';
+import { BehaviorSubject, Subject, takeUntil } from 'rxjs';
 
 import { ApiService } from '../../../core/services/api.service';
+import { NewsItem } from '../../../core/models/content.models';
 import { NewsGridComponent } from '../../../shared/components/news-grid/news-grid.component';
 import { SeoService } from '../../../core/services/seo.service';
 
@@ -21,11 +22,21 @@ export class NewsListPageComponent implements OnInit, OnDestroy {
   private readonly seo = inject(SeoService);
   private readonly destroy$ = new Subject<void>();
 
-  readonly news$ = this.api.getNews();
+  private readonly newsSubject = new BehaviorSubject<NewsItem[]>([]);
+  readonly news$ = this.newsSubject.asObservable();
 
   ngOnInit(): void {
     this.updateSeo();
-    this.translate.onLangChange.pipe(takeUntil(this.destroy$)).subscribe(() => this.updateSeo());
+    this.loadNews();
+    this.translate.onLangChange.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.updateSeo();
+      this.loadNews();
+    });
+  }
+
+  private loadNews(): void {
+    const language = this.translate.currentLang || 'en';
+    this.api.getNews(language, 20).subscribe(news => this.newsSubject.next(news));
   }
 
   ngOnDestroy(): void {

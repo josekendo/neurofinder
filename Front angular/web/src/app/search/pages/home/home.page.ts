@@ -68,12 +68,8 @@ export class HomePageComponent implements OnInit, OnDestroy {
   );
   readonly metricsError$ = this.metricsErrorSubject.asObservable();
 
-  readonly news$: Observable<NewsItem[]> = this.api.getNews().pipe(
-    catchError(() => {
-      this.newsErrorSubject.next(true);
-      return of([]);
-    })
-  );
+  private readonly newsSubject = new BehaviorSubject<NewsItem[]>([]);
+  readonly news$: Observable<NewsItem[]> = this.newsSubject.asObservable();
   readonly newsError$ = this.newsErrorSubject.asObservable();
   readonly results$: Observable<ArticleSummary[]> = this.store.select(selectResults);
   readonly loading$: Observable<boolean> = this.store.select(selectLoading);
@@ -81,8 +77,22 @@ export class HomePageComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.updateSeo();
-    this.translate.onLangChange.pipe(takeUntil(this.destroy$)).subscribe(() => this.updateSeo());
+    this.loadNews();
+    this.translate.onLangChange.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.updateSeo();
+      this.loadNews();
+    });
     this.store.dispatch(SearchActions.executeSearch({}));
+  }
+
+  private loadNews(): void {
+    const language = this.translate.currentLang || 'en';
+    this.api.getNews(language, 4).pipe(
+      catchError(() => {
+        this.newsErrorSubject.next(true);
+        return of([]);
+      })
+    ).subscribe(news => this.newsSubject.next(news));
   }
 
   submit(): void {

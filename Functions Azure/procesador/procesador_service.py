@@ -137,6 +137,40 @@ class ProcesadorService:
                 pass
             return []
     
+    def _normalizar_item(self, item: Dict) -> Dict:
+        """
+        Normaliza un item para asegurar que siempre tenga el campo language.
+        
+        Args:
+            item: Diccionario con información del item
+            
+        Returns:
+            Diccionario con el item normalizado
+        """
+        # Idiomas válidos
+        idiomas_validos = ['es', 'en', 'fr', 'de', 'it', 'pt']
+        
+        # Obtener idioma del item o usar 'en' por defecto
+        language = item.get('language', 'en')
+        
+        # Si el idioma es una cadena, limpiarla y normalizar
+        if isinstance(language, str):
+            language = language.strip().lower()
+            # Si el idioma contiene múltiples valores separados por coma, tomar el primero
+            if ',' in language:
+                language = language.split(',')[0].strip()
+            # Si el idioma no es válido, usar 'en' por defecto
+            if language not in idiomas_validos:
+                language = 'en'
+        else:
+            # Si no es string o está vacío, usar 'en' por defecto
+            language = 'en'
+        
+        # Asegurar que el item siempre tenga el campo language
+        item['language'] = language
+        
+        return item
+    
     def _renombrar_archivo_ok(self, container_client, nombre_archivo: str) -> None:
         """
         Renombra un archivo agregando "_ok" antes de la extensión.
@@ -210,7 +244,9 @@ class ProcesadorService:
             items = self.leer_archivo_json(nombre_archivo)
             
             if items:
-                todos_items.extend(items)
+                # Normalizar items para asegurar que todos tengan idioma
+                items_normalizados = [self._normalizar_item(item) for item in items]
+                todos_items.extend(items_normalizados)
                 archivos_procesados.append(nombre_archivo)
                 logging.info(f"  ✓ {len(items)} items agregados")
             else:

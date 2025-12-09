@@ -45,6 +45,16 @@ paths:
           schema:
             type: string
             example: en
+        - name: limit
+          in: query
+          description: Número máximo de noticias a retornar (mínimo 1, máximo 100, por defecto 50)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+            example: 20
       responses:
         '200':
           description: Colección de noticias mock

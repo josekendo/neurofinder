@@ -20,8 +20,6 @@ import {
 import { ArticleCardComponent } from '../../../shared/components/article-card/article-card.component';
 import { NewsGridComponent } from '../../../shared/components/news-grid/news-grid.component';
 import { MetricsBannerComponent } from '../../../shared/components/metrics-banner/metrics-banner.component';
-import { SearchActions } from '../../state/search.actions';
-import { selectError, selectLoading, selectResults } from '../../state/search.reducer';
 import { SeoService } from '../../../core/services/seo.service';
 
 @Component({
@@ -54,6 +52,7 @@ export class HomePageComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
 
   private readonly metricsErrorSubject = new BehaviorSubject<boolean>(false);
+  private readonly articlesErrorSubject = new BehaviorSubject<boolean>(false);
   private readonly newsErrorSubject = new BehaviorSubject<boolean>(false);
 
   readonly searchForm = this.fb.group({
@@ -68,21 +67,33 @@ export class HomePageComponent implements OnInit, OnDestroy {
   );
   readonly metricsError$ = this.metricsErrorSubject.asObservable();
 
+  private readonly articlesSubject = new BehaviorSubject<ArticleSummary[]>([]);
+  readonly articles$: Observable<ArticleSummary[]> = this.articlesSubject.asObservable();
+  readonly articlesError$ = this.articlesErrorSubject.asObservable();
+
   private readonly newsSubject = new BehaviorSubject<NewsItem[]>([]);
   readonly news$: Observable<NewsItem[]> = this.newsSubject.asObservable();
   readonly newsError$ = this.newsErrorSubject.asObservable();
-  readonly results$: Observable<ArticleSummary[]> = this.store.select(selectResults);
-  readonly loading$: Observable<boolean> = this.store.select(selectLoading);
-  readonly error$ = this.store.select(selectError);
 
   ngOnInit(): void {
     this.updateSeo();
+    this.loadLatestArticles();
     this.loadNews();
     this.translate.onLangChange.pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.updateSeo();
+      this.loadLatestArticles();
       this.loadNews();
     });
-    this.store.dispatch(SearchActions.executeSearch({}));
+  }
+
+  private loadLatestArticles(): void {
+    const language = this.translate.currentLang || 'en';
+    this.api.getLatestArticles(language, 4).pipe(
+      catchError(() => {
+        this.articlesErrorSubject.next(true);
+        return of([]);
+      })
+    ).subscribe(articles => this.articlesSubject.next(articles));
   }
 
   private loadNews(): void {
@@ -97,14 +108,10 @@ export class HomePageComponent implements OnInit, OnDestroy {
 
   submit(): void {
     const query = this.searchForm.value.query?.trim() ?? '';
-    this.store.dispatch(SearchActions.setQuery({ query }));
-    this.store.dispatch(SearchActions.executeSearch({}));
     this.router.navigate(['/search'], { queryParams: { q: query } });
   }
 
   handleTag(tag: string): void {
-    this.store.dispatch(SearchActions.setFilters({ filters: { dementiaTypes: [tag] } }));
-    this.store.dispatch(SearchActions.executeSearch({}));
     this.router.navigate(['/search'], { queryParams: { tag } });
   }
 

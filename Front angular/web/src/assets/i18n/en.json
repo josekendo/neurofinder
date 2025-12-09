@@ -15,7 +15,9 @@
     "METRIC_SOURCES": "Indexed sources",
     "METRIC_ARTICLES": "Analysed entries",
     "METRIC_UPDATED": "Last update",
-    "LATEST_NEWS": "Latest news"
+    "LATEST_NEWS": "Latest news",
+    "LATEST_ARTICLES": "Latest articles",
+    "NO_ARTICLES": "No articles available."
   },
   "SEARCH": {
     "TITLE": "Results",

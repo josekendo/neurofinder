@@ -47,8 +47,16 @@ export class ArticleDetailPageComponent implements OnDestroy {
 
   readonly error$ = this.errorSubject.asObservable();
 
-  readonly article$: Observable<ArticleDetail | null> = this.route.paramMap.pipe(
-    switchMap((params) => this.api.getArticle(params.get('id') ?? '')),
+  readonly article$: Observable<ArticleDetail | null> = this.route.queryParams.pipe(
+    switchMap((params) => {
+      const url = params['url'];
+      if (!url) {
+        return of(null);
+      }
+      // Decodificar la URL que viene codificada
+      const decodedUrl = decodeURIComponent(url);
+      return this.api.getArticle(decodedUrl);
+    }),
     tap((article) => {
       this.currentArticle = article;
       this.updateSeo(article);
@@ -82,7 +90,7 @@ export class ArticleDetailPageComponent implements OnDestroy {
       this.seo.update({
         title,
         description,
-        path: `/articles/${article.id}`,
+        path: `/articles?url=${encodeURIComponent(article.id)}`,
         type: 'article',
         locale,
         imageAlt
@@ -100,6 +108,13 @@ export class ArticleDetailPageComponent implements OnDestroy {
         imageAlt
       });
     }
+  }
+
+  getTagLabel(tag: string): string {
+    const translationKey = `DEMENTIA_TYPES.${tag}`;
+    const translated = this.translate.instant(translationKey);
+    // Si la traducción es igual a la clave, significa que no existe, entonces devolver el tag original
+    return translated !== translationKey ? translated : tag;
   }
 
   openReportModal(): void {

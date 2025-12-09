@@ -122,10 +122,10 @@ final class MockDataProvider implements DataProviderInterface
         return $results;
     }
 
-    public function getArticle(string $id): ?array
+    public function getArticle(string $url): ?array
     {
         foreach ($this->articles as $article) {
-            if ($article['id'] === $id) {
+            if ($article['id'] === $url) {
                 return $article + [
                     'summary' => 'La investigación demuestra que una combinación de proteínas plasmáticas permite anticipar el riesgo de Alzheimer con una precisión del 92%, reduciendo la dependencia de resonancias magnéticas.',
                     'keyPoints' => [
@@ -133,8 +133,8 @@ final class MockDataProvider implements DataProviderInterface
                         'Comparativa con biomarcadores tradicionales muestra mejora del 18%.',
                         'Valida protocolo de extracción no invasivo aplicable en atención primaria.'
                     ],
-                    'related' => array_values(array_filter($this->articles, static fn(array $item): bool => $item['id'] !== $id)),
-                    'originalUrl' => 'https://www.jneuroscience.com/alzheimer-blood-biomarkers'
+                    'related' => array_values(array_filter($this->articles, static fn(array $item): bool => $item['id'] !== $url)),
+                    'originalUrl' => $url
                 ];
             }
         }
@@ -158,6 +158,21 @@ final class MockDataProvider implements DataProviderInterface
     public function getMetrics(): array
     {
         return $this->metrics;
+    }
+
+    public function getLatestArticles(int $limit = 4, ?string $language = null): array
+    {
+        // Filtrar por idioma si se especifica
+        $lang = $language ?? 'en';
+        $filtered = array_filter($this->articles, static fn(array $article): bool => 
+            ($article['language'] ?? 'en') === $lang
+        );
+        
+        // Ordenar por fecha de publicación (más recientes primero) y retornar los últimos N
+        $sorted = array_values($filtered);
+        usort($sorted, static fn(array $a, array $b): int => strcmp($b['publishedAt'], $a['publishedAt']));
+        $limit = max(1, min(100, $limit));
+        return array_slice($sorted, 0, $limit);
     }
 }
 

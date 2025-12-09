@@ -35,6 +35,13 @@ export class NewsGridComponent implements OnDestroy {
     this.destroy$.complete();
   }
 
+  getTagLabel(tag: string): string {
+    const translationKey = `DEMENTIA_TYPES.${tag}`;
+    const translated = this.translate.instant(translationKey);
+    // Si la traducción es igual a la clave, significa que no existe, entonces devolver el tag original
+    return translated !== translationKey ? translated : tag;
+  }
+
   openReportModal(newsUrl: string): void {
     const dialogRef = this.dialog.open(ReportModalComponent, {
       width: '500px',

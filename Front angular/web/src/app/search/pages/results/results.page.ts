@@ -87,7 +87,7 @@ export class ResultsPageComponent implements OnInit, OnDestroy {
     'tnm.unspecified'
   ];
   readonly documentOptions = ['article', 'paper', 'clinical-report', 'news'];
-  readonly languageOptions = ['es', 'en', 'fr', 'de'];
+  readonly languageOptions = ['es', 'en'];
   readonly searchForm = this.fb.group({
     query: ['']
   });

@@ -1,17 +1,18 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 import { ArticleSummary } from '../../../core/models/content.models';
 
 @Component({
   selector: 'app-article-card',
   standalone: true,
-  imports: [CommonModule, DatePipe, MatCardModule, MatChipsModule, MatButtonModule, MatIconModule, RouterLink],
+  imports: [CommonModule, DatePipe, MatCardModule, MatChipsModule, MatButtonModule, MatIconModule, RouterLink, TranslateModule],
   templateUrl: './article-card.component.html',
   styleUrl: './article-card.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -21,8 +22,17 @@ export class ArticleCardComponent {
   @Input() showActions = true;
   @Output() tagSelected = new EventEmitter<string>();
 
+  private readonly translate = inject(TranslateService);
+
   emitTag(tag: string): void {
     this.tagSelected.emit(tag);
+  }
+
+  getTagLabel(tag: string): string {
+    const translationKey = `DEMENTIA_TYPES.${tag}`;
+    const translated = this.translate.instant(translationKey);
+    // Si la traducción es igual a la clave, significa que no existe, entonces devolver el tag original
+    return translated !== translationKey ? translated : tag;
   }
 }
 

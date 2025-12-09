@@ -88,13 +88,43 @@ final class Application
             return Response::ok($this->provider->getNews($language, $limit));
         }
 
+        if ($method === 'GET' && $path === '/articles/latest') {
+            // Obtener idioma de query string, por defecto 'en' (inglés)
+            $language = $_GET['language'] ?? null;
+            if ($language !== null) {
+                $language = trim((string)$language);
+                if ($language === '') {
+                    $language = null;
+                }
+            }
+            // Si no se especifica idioma, usar 'en' por defecto
+            $language = $language ?? 'en';
+            
+            // Obtener límite de query string, por defecto 4
+            $limit = 4;
+            if (isset($_GET['limit'])) {
+                $limitParam = (int)$_GET['limit'];
+                if ($limitParam > 0 && $limitParam <= 100) {
+                    $limit = $limitParam;
+                }
+            }
+            
+            return Response::ok($this->provider->getLatestArticles($limit, $language));
+        }
+
         if ($method === 'POST' && $path === '/search') {
             $payload = $this->getJsonBody();
             return Response::ok($this->provider->search($payload));
         }
 
-        if ($method === 'GET' && preg_match('#^/articles/(?P<id>[A-Za-z0-9_\-]+)$#', $path, $matches) === 1) {
-            $article = $this->provider->getArticle($matches['id']);
+        if ($method === 'POST' && $path === '/articles') {
+            $payload = $this->getJsonBody();
+            if (!isset($payload['url']) || !is_string($payload['url']) || trim($payload['url']) === '') {
+                return Response::badRequest('El campo url es obligatorio');
+            }
+            
+            $url = trim($payload['url']);
+            $article = $this->provider->getArticle($url);
             if ($article === null) {
                 return Response::notFound('Artículo no encontrado');
             }

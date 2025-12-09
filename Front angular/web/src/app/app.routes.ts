@@ -12,7 +12,7 @@ export const routes: Routes = [
       import('./search/pages/results/results.page').then((m) => m.ResultsPageComponent)
   },
   {
-    path: 'articles/:id',
+    path: 'articles',
     loadComponent: () =>
       import('./articles/pages/article-detail/article-detail.page').then(
         (m) => m.ArticleDetailPageComponent

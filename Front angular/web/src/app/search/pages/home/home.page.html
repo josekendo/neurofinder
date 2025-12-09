@@ -22,25 +22,18 @@
   <app-metrics-banner [metrics]="metrics$ | async"></app-metrics-banner>
 </section>
 
-<section class="latest-results">
+<section class="articles-section">
   <header>
-    <h2>{{ 'SEARCH.TITLE' | translate }}</h2>
-    <a mat-button color="primary" routerLink="/search">{{ 'NAV.SEARCH' | translate }}</a>
+    <h2>{{ 'HOME.LATEST_ARTICLES' | translate }}</h2>
   </header>
-
-  @if (loading$ | async) {
-    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  @if (articlesError$ | async) {
+    <p class="error-banner" role="alert">{{ 'ERROR.GENERIC' | translate }}</p>
   }
-
-  @if (error$ | async; as errorKey) {
-    <p class="error-banner" role="alert">{{ errorKey | translate }}</p>
-  }
-
   <div class="articles">
-    @for (article of results$ | async; track article.id) {
+    @for (article of articles$ | async; track article.id) {
       <app-article-card [article]="article" (tagSelected)="handleTag($event)"></app-article-card>
     } @empty {
-      <p class="empty">{{ 'SEARCH.NO_RESULTS' | translate }}</p>
+      <p class="empty">{{ 'HOME.NO_ARTICLES' | translate }}</p>
     }
   </div>
 </section>

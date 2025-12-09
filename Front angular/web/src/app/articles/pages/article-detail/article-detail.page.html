@@ -12,7 +12,7 @@
         </div>
         <div class="tags">
           @for (tag of article.tags; track tag) {
-            <mat-chip>#{{ tag }}</mat-chip>
+            <mat-chip>#{{ getTagLabel(tag) }}</mat-chip>
           }
         </div>
         <a mat-stroked-button color="primary" [href]="article.originalUrl" target="_blank" rel="noopener">

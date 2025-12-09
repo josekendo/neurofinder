@@ -78,6 +78,32 @@ main {
   .results-list {
     display: grid;
     gap: 16px;
+
+    mat-card {
+      height: 100%;
+
+      mat-card-title {
+        font-weight: 600;
+        line-height: 1.4;
+      }
+
+      p {
+        min-height: 72px;
+        color: #334155;
+        font-size: 0.95rem;
+      }
+
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 12px;
+
+        mat-chip {
+          cursor: pointer;
+        }
+      }
+    }
   }
 
   .empty {

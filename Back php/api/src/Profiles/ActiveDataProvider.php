@@ -51,16 +51,52 @@ final class ActiveDataProvider implements DataProviderInterface
                         url as id,
                         title,
                         excerpt,
+                        summary,
                         published_at as publishedAt,
                         processed_at as processedAt,
                         score,
                         source,
                         language,
-                        tags
+                        tags,
+                        tipo as type
                     FROM items 
-                    WHERE tipo = 'article'";
+                    WHERE tipo IN ('article', 'news')";
             
             $params = [];
+            
+            // Filtro por tipos de documento (aplicado en SQL)
+            // Mapear tipos del frontend a tipos de BD:
+            // - article, paper, clinical-report -> article
+            // - news -> news
+            $documentTypes = (array)($filters['documentTypes'] ?? []);
+            if ($documentTypes !== []) {
+                $allowedTypes = [];
+                foreach ($documentTypes as $docType) {
+                    $docType = trim((string)$docType);
+                    if ($docType === 'news') {
+                        $allowedTypes[] = 'news';
+                    } elseif (in_array($docType, ['article', 'paper', 'clinical-report'], true)) {
+                        $allowedTypes[] = 'article';
+                    }
+                }
+                
+                // Eliminar duplicados
+                $allowedTypes = array_unique($allowedTypes);
+                
+                // Aplicar filtro en SQL si hay tipos permitidos
+                if (!empty($allowedTypes)) {
+                    $docPlaceholders = [];
+                    foreach ($allowedTypes as $i => $docType) {
+                        $key = ':doc_type_' . $i;
+                        $docPlaceholders[] = $key;
+                        $params[$key] = $docType;
+                    }
+                    $sql .= " AND tipo IN (" . implode(', ', $docPlaceholders) . ")";
+                } else {
+                    // Si no hay tipos permitidos válidos, retornar vacío (no hay resultados)
+                    return [];
+                }
+            }
             
             // Filtro por tipos de demencia
             $dementiaTypes = (array)($filters['dementiaTypes'] ?? []);
@@ -134,17 +170,30 @@ final class ActiveDataProvider implements DataProviderInterface
                     $tags = [];
                 }
 
-                $articles[] = [
+                $type = $row['type'] ?? 'article';
+                
+                // Construir resultado base
+                $result = [
                     'id' => $row['id'],
                     'title' => $row['title'],
-                    'excerpt' => $row['excerpt'] ?? '',
                     'publishedAt' => $row['publishedAt'],
                     'processedAt' => $row['processedAt'] ?? '',
                     'score' => $row['score'] !== null ? (float)$row['score'] : 0.0,
                     'source' => $row['source'] ?? '',
                     'language' => $row['language'] ?? '',
-                    'tags' => $tags
+                    'tags' => $tags,
+                    'type' => $type
                 ];
+                
+                // Agregar campos específicos según el tipo
+                if ($type === 'news') {
+                    $result['summary'] = $row['summary'] ?? $row['excerpt'] ?? '';
+                    $result['url'] = $row['id']; // Para noticias, url es el id
+                } else {
+                    $result['excerpt'] = $row['excerpt'] ?? '';
+                }
+
+                $articles[] = $result;
             }
 
             return $articles;
@@ -367,14 +416,16 @@ final class ActiveDataProvider implements DataProviderInterface
                             url as id,
                             title,
                             excerpt,
+                            summary,
                             published_at as publishedAt,
                             processed_at as processedAt,
                             score,
                             source,
                             language,
-                            tags
+                            tags,
+                            tipo as type
                         FROM items 
-                        WHERE tipo = 'article'
+                        WHERE tipo IN ('article', 'news')
                         AND url IN (" . implode(', ', $placeholders) . ")";
             } else {
                 // Si no hay filtro de idioma, buscar con cualquier sufijo de idioma
@@ -396,14 +447,16 @@ final class ActiveDataProvider implements DataProviderInterface
                             url as id,
                             title,
                             excerpt,
+                            summary,
                             published_at as publishedAt,
                             processed_at as processedAt,
                             score,
                             source,
                             language,
-                            tags
+                            tags,
+                            tipo as type
                         FROM items 
-                        WHERE tipo = 'article'
+                        WHERE tipo IN ('article', 'news')
                         AND (" . implode(' OR ', $likeConditions) . ")";
             }
             
@@ -418,6 +471,40 @@ final class ActiveDataProvider implements DataProviderInterface
                     $params[$key] = json_encode([$type]);
                 }
                 $sql .= " AND (" . implode(' OR ', $conditions) . ")";
+            }
+            
+            // Filtro por tipo de documento (aplicado en SQL)
+            // Mapear tipos del frontend a tipos de BD:
+            // - article, paper, clinical-report -> article
+            // - news -> news
+            $documentTypes = (array)($filters['documentTypes'] ?? []);
+            if ($documentTypes !== []) {
+                $allowedTypes = [];
+                foreach ($documentTypes as $docType) {
+                    $docType = trim((string)$docType);
+                    if ($docType === 'news') {
+                        $allowedTypes[] = 'news';
+                    } elseif (in_array($docType, ['article', 'paper', 'clinical-report'], true)) {
+                        $allowedTypes[] = 'article';
+                    }
+                }
+                
+                // Eliminar duplicados
+                $allowedTypes = array_unique($allowedTypes);
+                
+                // Aplicar filtro en SQL si hay tipos permitidos
+                if (!empty($allowedTypes)) {
+                    $docPlaceholders = [];
+                    foreach ($allowedTypes as $i => $docType) {
+                        $key = ':doc_type_' . $i;
+                        $docPlaceholders[] = $key;
+                        $params[$key] = $docType;
+                    }
+                    $sql .= " AND tipo IN (" . implode(', ', $docPlaceholders) . ")";
+                } else {
+                    // Si no hay tipos permitidos válidos, retornar vacío (no hay resultados)
+                    return [];
+                }
             }
             
             // Nota: No filtramos por language aquí porque ya lo hicimos en la búsqueda de URLs
@@ -480,17 +567,30 @@ final class ActiveDataProvider implements DataProviderInterface
                     $tags = [];
                 }
 
-                $articles[] = [
+                $type = $row['type'] ?? 'article';
+                
+                // Construir resultado base
+                $result = [
                     'id' => $row['id'],
                     'title' => $row['title'],
-                    'excerpt' => $row['excerpt'] ?? '',
                     'publishedAt' => $row['publishedAt'],
                     'processedAt' => $row['processedAt'] ?? '',
                     'score' => $row['score'] !== null ? (float)$row['score'] : 0.0,
                     'source' => $row['source'] ?? '',
                     'language' => $row['language'] ?? '',
-                    'tags' => $tags
+                    'tags' => $tags,
+                    'type' => $type
                 ];
+                
+                // Agregar campos específicos según el tipo
+                if ($type === 'news') {
+                    $result['summary'] = $row['summary'] ?? $row['excerpt'] ?? '';
+                    $result['url'] = $row['id']; // Para noticias, url es el id
+                } else {
+                    $result['excerpt'] = $row['excerpt'] ?? '';
+                }
+
+                $articles[] = $result;
             }
 
             return $articles;

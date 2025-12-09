@@ -1,13 +1,16 @@
 export interface ArticleSummary {
   id: string;
   title: string;
-  excerpt: string;
+  excerpt?: string;
+  summary?: string;
   publishedAt: string;
   processedAt: string;
   score: number;
   source: string;
   language: string;
   tags: string[];
+  type: 'article' | 'news' | 'paper' | 'clinical-report' | 'guideline' | 'dataset';
+  url?: string; // Para noticias
 }
 
 export interface ArticleDetail extends ArticleSummary {

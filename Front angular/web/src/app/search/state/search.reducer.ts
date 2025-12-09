@@ -38,9 +38,16 @@ export const searchReducer = createReducer(
   })),
   on(SearchActions.setFilters, (state, { filters }) => ({
     ...state,
+    // Reemplazar completamente los filtros con los nuevos valores
+    // El componente de filtros siempre envía todos los campos
     filters: {
-      ...state.filters,
-      ...filters
+      dementiaTypes: filters.dementiaTypes ?? [],
+      documentTypes: filters.documentTypes ?? [],
+      languages: filters.languages ?? [],
+      dateFrom: filters.dateFrom,
+      dateTo: filters.dateTo,
+      minScore: filters.minScore,
+      sortBy: filters.sortBy ?? 'score'
     }
   })),
   on(SearchActions.executeSearch, (state, { request }) => ({

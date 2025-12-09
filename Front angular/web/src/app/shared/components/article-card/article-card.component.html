@@ -11,7 +11,7 @@
   </mat-card-header>
 
   <mat-card-content>
-    <p class="excerpt">{{ article.excerpt }}</p>
+    <p class="excerpt">{{ article.excerpt || article.summary || '' }}</p>
     <div class="tags">
       @for (tag of article.tags; track tag) {
         <mat-chip (click)="emitTag(tag)" class="clickable">#{{ getTagLabel(tag) }}</mat-chip>

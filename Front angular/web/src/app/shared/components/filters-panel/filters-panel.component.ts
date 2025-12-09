@@ -65,9 +65,16 @@ export class FiltersPanelComponent implements OnChanges {
   }
 
   apply(): void {
+    // Emitir todos los valores del formulario para asegurar que todos los filtros se envíen
+    const formValue = this.form.value;
     this.filtersChange.emit({
-      ...this.filters,
-      ...this.form.value
+      dementiaTypes: formValue.dementiaTypes ?? [],
+      documentTypes: formValue.documentTypes ?? [],
+      languages: formValue.languages ?? [],
+      dateFrom: formValue.dateFrom ?? undefined,
+      dateTo: formValue.dateTo ?? undefined,
+      minScore: formValue.minScore ?? undefined,
+      sortBy: formValue.sortBy ?? 'score'
     } as SearchFilters);
   }
 

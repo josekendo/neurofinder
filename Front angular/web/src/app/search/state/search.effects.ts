@@ -21,7 +21,26 @@ export class SearchEffects {
         this.store.select(selectFilters)
       ),
       switchMap(([action, query, filters]) => {
-        const request = action.request ?? { query, filters };
+        // Siempre usar los valores actuales del store para asegurar que los filtros estén actualizados
+        // Solo usar action.request si se pasa explícitamente y tiene todos los campos
+        const request: { query: string; filters: any } = action.request 
+          ? { 
+              query: action.request.query ?? query ?? '', 
+              filters: { ...filters, ...(action.request.filters ?? {}) }
+            }
+          : { 
+              query: query ?? '', 
+              filters: filters ?? {
+                dementiaTypes: [],
+                documentTypes: [],
+                languages: [],
+                dateFrom: undefined,
+                dateTo: undefined,
+                minScore: undefined,
+                sortBy: 'score'
+              }
+            };
+        
         return this.api.search(request).pipe(
           map((results) => SearchActions.searchSuccess({ results })),
           catchError(() => of(SearchActions.searchFailure({ error: 'ERROR.GENERIC' })))

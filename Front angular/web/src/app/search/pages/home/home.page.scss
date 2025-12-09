@@ -76,6 +76,30 @@ section {
   }
 }
 
+.articles-section {
+  header {
+    margin-bottom: 16px;
+
+    h2 {
+      margin: 0;
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+  }
+
+  .articles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+
+    .empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: #64748b;
+    }
+  }
+}
+
 .news-section {
   header {
     margin-bottom: 16px;

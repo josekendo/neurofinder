@@ -11,6 +11,9 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card';
+import { MatChipsModule } from '@angular/material/chips';
+import { DatePipe } from '@angular/common';
 
 import { FiltersPanelComponent } from '../../../shared/components/filters-panel/filters-panel.component';
 import { ArticleCardComponent } from '../../../shared/components/article-card/article-card.component';
@@ -39,7 +42,10 @@ import { SeoService } from '../../../core/services/seo.service';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    MatCardModule,
+    MatChipsModule,
+    DatePipe
   ],
   templateUrl: './results.page.html',
   styleUrl: './results.page.scss',
@@ -143,6 +149,11 @@ export class ResultsPageComponent implements OnInit, OnDestroy {
       queryParams: { q: query || null },
       queryParamsHandling: 'merge'
     });
+  }
+
+  getTagLabel(tag: string): string {
+    // Remover prefijo tnm. si existe
+    return tag.replace(/^tnm\./, '').replace(/\./g, ' ').replace(/_/g, ' ');
   }
 
   private updateSeo(query: string): void {

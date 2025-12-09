@@ -1,14 +1,35 @@
-.full-width {
-  width: 100%;
-  margin-bottom: 1rem;
+mat-dialog-title {
+  margin-bottom: 8px;
+  padding-bottom: 16px;
+  padding-top: 0;
 }
 
 mat-dialog-content {
   min-width: 400px;
   max-width: 600px;
+  padding-top: 32px;
+  padding-bottom: 24px;
+  padding-left: 24px;
+  padding-right: 24px;
+  overflow: visible;
+  
+  form {
+    margin-top: 0;
+  }
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 0;
+  display: block;
+  
+  &:not(:last-child) {
+    margin-bottom: 20px;
+  }
 }
 
 mat-dialog-actions {
   padding: 1rem;
+  margin: 0;
 }
 

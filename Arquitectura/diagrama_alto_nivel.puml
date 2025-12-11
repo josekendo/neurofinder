@@ -1,0 +1,38 @@
+@startuml Diagrama_Alto_Nivel
+!theme plain
+skinparam componentStyle rectangle
+skinparam defaultFontName Verdana
+skinparam defaultFontSize 12
+skinparam padding 10
+skinparam nodesep 80
+skinparam ranksep 80
+
+' << IMPORTANTE >> fuerza layout horizontal
+left to right direction
+
+cloud "OVH Hosting" as OVH #LightYellow {
+  component "Frontend\nAngular" as Frontend #LightBlue
+  component "Backend\nPHP API" as Backend #LightGreen
+  database "MySQL\nDatabase" as MySQL #LightGoldenRodYellow
+}
+
+cloud "Microsoft Azure" as Azure #LightCyan {
+  component "Azure Functions\nPython" as Functions #MistyRose
+  storage "Blob Storage\nFAISS Index" as Storage #WhiteSmoke
+}
+
+component "APIs Externas\nNCBI | News | OpenAI" as External #Thistle
+
+' -------- TRUCO PARA CENTRAR / ALINEAR --------
+' Estos enlaces NO se dibujan, solo influyen en el layout
+OVH -[hidden]- Azure
+Azure -[hidden]- External
+' ----------------------------------------------
+
+Frontend --> Backend : REST
+Backend --> MySQL : SQL
+Backend --> Functions : HTTP
+Functions --> Storage : Datos
+Functions --> External : API
+
+@enduml

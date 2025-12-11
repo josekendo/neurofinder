@@ -1,0 +1,192 @@
+@startuml Diagrama_Componentes_TFM
+!theme plain
+skinparam componentStyle rectangle
+skinparam defaultFontName Verdana
+skinparam defaultFontSize 12
+skinparam padding 10
+skinparam nodesep 80
+skinparam ranksep 80
+
+title Arquitectura Completa - Sistema TFM
+
+' ======================
+' OVH HOSTING
+' ======================
+cloud "OVH Hosting" as OVHCloud #LightYellow {
+
+' ======================
+' FRONTEND ANGULAR
+' ======================
+package "Frontend Angular Web" <<subsystem>> #LightBlue {
+  component "Search Module\n(NgRx State)" as SearchModule <<component>> #Lavender
+  component "News Module" as NewsModule <<component>> #Lavender
+  component "Articles Module" as ArticlesModule <<component>> #Lavender
+  component "Shared Components\n(Cards, Filters, Metrics)" as SharedComponents <<component>> #Lavender
+  component "Core Services\n(API, SEO)" as CoreServices <<component>> #Lavender
+  
+  SearchModule -[hidden]down- ArticlesModule
+  NewsModule -[hidden]down- SharedComponents
+  ArticlesModule -[hidden]down- CoreServices
+  SharedComponents -[hidden]down- CoreServices
+}
+
+' ======================
+' BACKEND PHP
+' ======================
+package "Backend PHP API" <<subsystem>> #LightGreen {
+  component "API Router\n(REST Endpoints)" as APIRouter <<component>> #LightYellow
+  component "Data Providers\n(Active/Mock)" as DataProviders <<component>> #LightYellow
+  component "Process Script\n(Procesamiento)" as ProcessScript <<component>> #LightYellow
+  component "Recopilate Script\n(Recopilación)" as RecopilateScript <<component>> #LightYellow
+  component "Config & Bootstrap" as ConfigBootstrap <<component>> #LightYellow
+  
+  APIRouter -[hidden]down- ProcessScript
+  DataProviders -[hidden]down- RecopilateScript
+  ProcessScript -[hidden]down- ConfigBootstrap
+  RecopilateScript -[hidden]down- ConfigBootstrap
+}
+
+' ======================
+' BASE DE DATOS (OVH)
+' ======================
+database "Base de Datos\nMySQL" as SQLDatabase {
+}
+
+}
+
+' ======================
+' MICROSOFT AZURE
+' ======================
+cloud "Microsoft Azure" as AzureCloud #LightCyan {
+
+' ======================
+' AZURE FUNCTIONS
+' ======================
+package "Azure Functions (Python)" <<subsystem>> #MistyRose {
+  component "Recopilador\n(Data Collection)" as Recopilador <<component>> #Wheat
+  component "Procesador\n(Data Processing)" as Procesador <<component>> #Wheat
+  component "Buscador\n(Search Service)" as Buscador <<component>> #Wheat
+  component "Evaluador\n(Evaluation Service)" as Evaluador <<component>> #Wheat
+  component "Function App\n(Orchestrator)" as FunctionApp <<component>> #Wheat
+  
+  Recopilador -[hidden]down- Buscador
+  Procesador -[hidden]down- Evaluador
+  Buscador -[hidden]down- FunctionApp
+  Evaluador -[hidden]down- FunctionApp
+}
+
+' ======================
+' ALMACENAMIENTO AZURE
+' ======================
+database "Azure Storage\n(Blob/Table)" as AzureStorage {
+}
+
+database "FAISS Index\n(Vector Search)" as FAISSIndex {
+}
+
+}
+
+' ======================
+' APIS EXTERNAS
+' ======================
+package "APIs Externas" <<subsystem>> #Thistle {
+  component "NCBI API\n(Publications)" as NCBIAPI <<component>> #LightGreen
+  component "NewsAPI\n(News)" as NewsAPI <<component>> #LightGreen
+  component "Azure OpenAI\n(Embeddings/LLM)" as OpenAIAPI <<component>> #LightGreen
+  
+  NCBIAPI -[hidden]right- NewsAPI
+  NewsAPI -[hidden]right- OpenAIAPI
+}
+
+' ======================
+' CONEXIONES
+' ======================
+
+' Frontend a Backend
+CoreServices .right.> APIRouter : HTTP/REST
+
+' Backend a Base de Datos
+DataProviders .down.> SQLDatabase : SQL
+ProcessScript .down.> SQLDatabase : SQL
+
+' Backend a Azure Functions
+RecopilateScript .right.> FunctionApp : HTTP
+
+' Azure Functions entre sí
+FunctionApp ..> Recopilador : orchestrate
+FunctionApp ..> Procesador : orchestrate
+FunctionApp ..> Buscador : orchestrate
+FunctionApp ..> Evaluador : orchestrate
+
+' Azure Functions a Almacenamiento
+Procesador .down.> AzureStorage : Blob/Table
+Recopilador .down.> AzureStorage : Blob/Table
+Buscador .down.> FAISSIndex : Index Query
+Procesador .down.> FAISSIndex : Index Build
+
+' Azure Functions a APIs Externas
+Recopilador .down.> NCBIAPI : API Call
+Recopilador .down.> NewsAPI : API Call
+Procesador .down.> OpenAIAPI : Embeddings
+Evaluador .down.> OpenAIAPI : LLM Query
+
+' Backend puede consultar también
+APIRouter .down.> DataProviders : uses
+
+' Notas
+note right of "Frontend Angular Web"
+  **Frontend:**
+  • SPA con Angular 18
+  • NgRx para gestión de estado
+  • SSR con Angular Universal
+  • Internacionalización (i18n)
+end note
+
+note right of "Backend PHP API"
+  **Backend:**
+  • API REST en PHP
+  • Arquitectura modular
+  • Proveedores de datos
+  • Scripts de procesamiento
+end note
+
+note right of "Azure Functions (Python)"
+  **Azure Functions:**
+  • Microservicios serverless
+  • Python 3.11
+  • Event-driven architecture
+  • Integración con Azure OpenAI
+end note
+
+note bottom of SQLDatabase
+  **MySQL:**
+  Almacena datos estructurados
+  de publicaciones y noticias
+end note
+
+note bottom of AzureStorage
+  **Azure Storage:**
+  Documentos procesados,
+  archivos temporales y logs
+end note
+
+note bottom of FAISSIndex
+  **FAISS:**
+  Búsqueda vectorial para
+  similitud semántica
+end note
+
+legend right
+  |<#LightYellow>| OVH Hosting |
+  |<#LightCyan>| Microsoft Azure |
+  |<#LightBlue>| Frontend (Angular) |
+  |<#LightGreen>| Backend (PHP) |
+  |<#MistyRose>| Azure Functions (Python) |
+  |<#Thistle>| APIs Externas |
+  
+  Conexiones:
+  .> Dependencia / Comunicación
+endlegend
+
+@enduml
+

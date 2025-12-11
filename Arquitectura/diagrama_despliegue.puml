@@ -1,0 +1,53 @@
+@startuml Diagrama_Despliegue
+!theme plain
+skinparam defaultFontName Verdana
+skinparam defaultFontSize 12
+skinparam padding 10
+skinparam nodesep 80
+skinparam ranksep 80
+
+title Infraestructura - Sistema TFM
+
+node "Navegador Web" as Browser #LightBlue
+
+cloud "OVH Hosting" as OVH #LightYellow {
+  node "Angular App\n(SSR)" as AngularApp #LightBlue
+  node "PHP API\nApache/Nginx" as PHPAPI #LightGreen
+  database "MySQL\nDatabase" as MySQL #LightGoldenRodYellow
+}
+
+cloud "Microsoft Azure" as Azure #LightCyan {
+  node "Azure Functions\nPython" as Functions #MistyRose
+  storage "Blob Storage" as Blob #LightSalmon
+  node "Azure OpenAI\nService" as OpenAI #LightPink
+}
+
+storage "FAISS Index\n(File System)" as FAISS #WhiteSmoke
+
+cloud "APIs Externas\nNCBI | NewsAPI" as External #Thistle
+
+Browser --> AngularApp : HTTPS
+AngularApp --> PHPAPI : REST API
+PHPAPI --> MySQL : SQL
+PHPAPI --> Functions : HTTPS
+Functions --> Blob : SDK
+Functions --> OpenAI : API
+Functions --> FAISS : File I/O
+Functions --> External : HTTPS
+
+note right of OVH
+  **Hosting OVH**
+  • Servidor VPS/Dedicado
+  • PHP 8.x + MySQL 8.0
+  • Angular Universal (SSR)
+end note
+
+note right of Azure
+  **Microsoft Azure**
+  • Functions (Serverless)
+  • Blob Storage
+  • OpenAI Service
+end note
+
+@enduml
+

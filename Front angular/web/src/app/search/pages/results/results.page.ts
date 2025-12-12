@@ -2,8 +2,9 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject } from '@
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, distinctUntilChanged } from 'rxjs';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
@@ -36,6 +37,7 @@ import { SeoService } from '../../../core/services/seo.service';
     FiltersPanelComponent,
     ArticleCardComponent,
     MatProgressBarModule,
+    MatProgressSpinnerModule,
     MatDividerModule,
     TranslateModule,
     ReactiveFormsModule,
@@ -60,6 +62,16 @@ export class ResultsPageComponent implements OnInit, OnDestroy {
   private readonly seo = inject(SeoService);
   private readonly destroy$ = new Subject<void>();
   private currentQuery = '';
+  private currentFilters: SearchFilters = {
+    dementiaTypes: [],
+    documentTypes: [],
+    languages: [],
+    dateFrom: undefined,
+    dateTo: undefined,
+    minScore: undefined,
+    sortBy: 'score'
+  };
+  private isInitialLoad = true;
 
   readonly results$ = this.store.select(selectResults);
   readonly filters$ = this.store.select(selectFilters);
@@ -99,22 +111,46 @@ export class ResultsPageComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
-    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe((params) => {
-      const query = params['q'];
-      const tag = params['tag'];
-      if (query) {
-        this.store.dispatch(SearchActions.setQuery({ query }));
-      }
-      if (tag) {
-        this.store.dispatch(SearchActions.setFilters({ filters: { dementiaTypes: [tag] } }));
-      }
-      this.store.dispatch(SearchActions.executeSearch({}));
+    // Suscribirse a los filtros primero para mantenerlos sincronizados
+    this.filters$.pipe(takeUntil(this.destroy$)).subscribe((filters) => {
+      this.currentFilters = filters;
     });
 
     this.query$.pipe(takeUntil(this.destroy$)).subscribe((query) => {
       this.currentQuery = query ?? '';
       this.searchForm.patchValue({ query }, { emitEvent: false });
       this.updateSeo(this.currentQuery);
+    });
+
+    // Manejar los queryParams de la URL
+    // Solo ejecutar búsqueda en la carga inicial, después se maneja internamente
+    this.route.queryParams.pipe(
+      takeUntil(this.destroy$),
+      distinctUntilChanged((prev, curr) => JSON.stringify(prev) === JSON.stringify(curr))
+    ).subscribe((params) => {
+      const query = params['q'];
+      const tag = params['tag'];
+      
+      // Actualizar query si existe en la URL
+      if (query !== undefined) {
+        this.store.dispatch(SearchActions.setQuery({ query: query || '' }));
+      }
+      
+      // Actualizar filtros si existe tag en la URL
+      if (tag) {
+        const updatedFilters: SearchFilters = {
+          ...this.currentFilters,
+          dementiaTypes: [tag]
+        };
+        this.store.dispatch(SearchActions.setFilters({ filters: updatedFilters }));
+      }
+      
+      // Ejecutar búsqueda solo en la carga inicial
+      // Las búsquedas subsecuentes se manejan en los métodos onSubmit, onFiltersChange, etc.
+      if (this.isInitialLoad) {
+        this.store.dispatch(SearchActions.executeSearch({}));
+        this.isInitialLoad = false;
+      }
     });
 
     this.translate.onLangChange.pipe(takeUntil(this.destroy$)).subscribe(() => this.updateSeo(this.currentQuery));
@@ -133,10 +169,21 @@ export class ResultsPageComponent implements OnInit, OnDestroy {
   onClear(): void {
     this.store.dispatch(SearchActions.reset());
     this.store.dispatch(SearchActions.executeSearch({}));
+    // Limpiar la URL de todos los parámetros de búsqueda
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {},
+      replaceUrl: true
+    });
   }
 
   onTag(tag: string): void {
-    this.store.dispatch(SearchActions.setFilters({ filters: { dementiaTypes: [tag] } }));
+    // Mantener los filtros actuales y solo agregar/modificar el tipo de demencia
+    const updatedFilters: SearchFilters = {
+      ...this.currentFilters,
+      dementiaTypes: [tag]
+    };
+    this.store.dispatch(SearchActions.setFilters({ filters: updatedFilters }));
     this.store.dispatch(SearchActions.executeSearch({}));
   }
 
@@ -144,16 +191,24 @@ export class ResultsPageComponent implements OnInit, OnDestroy {
     const query = this.searchForm.value.query?.trim() ?? '';
     this.store.dispatch(SearchActions.setQuery({ query }));
     this.store.dispatch(SearchActions.executeSearch({}));
+    // Actualizar solo el parámetro 'q', eliminando 'tag' si existía
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { q: query || null },
-      queryParamsHandling: 'merge'
+      queryParams: { q: query || null, tag: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true // Evita crear nueva entrada en historial y evita disparar subscribe de nuevo
     });
   }
 
   getTagLabel(tag: string): string {
     // Remover prefijo tnm. si existe
     return tag.replace(/^tnm\./, '').replace(/\./g, ' ').replace(/_/g, ' ');
+  }
+
+  getTypeLabel(type: string): string {
+    const translationKey = `DOCUMENT_TYPES.${type}`;
+    const translated = this.translate.instant(translationKey);
+    return translated !== translationKey ? translated : type;
   }
 
   private updateSeo(query: string): void {

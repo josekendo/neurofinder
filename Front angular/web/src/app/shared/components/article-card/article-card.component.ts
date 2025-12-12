@@ -20,6 +20,7 @@ import { ArticleSummary } from '../../../core/models/content.models';
 export class ArticleCardComponent {
   @Input({ required: true }) article!: ArticleSummary;
   @Input() showActions = true;
+  @Input() showTypeBadge = true; // Por defecto true para búsqueda, false para home
   @Output() tagSelected = new EventEmitter<string>();
 
   private readonly translate = inject(TranslateService);
@@ -33,6 +34,12 @@ export class ArticleCardComponent {
     const translated = this.translate.instant(translationKey);
     // Si la traducción es igual a la clave, significa que no existe, entonces devolver el tag original
     return translated !== translationKey ? translated : tag;
+  }
+
+  getTypeLabel(type: string): string {
+    const translationKey = `DOCUMENT_TYPES.${type}`;
+    const translated = this.translate.instant(translationKey);
+    return translated !== translationKey ? translated : type;
   }
 }
 

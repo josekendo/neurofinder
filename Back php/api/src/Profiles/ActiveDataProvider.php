@@ -4,9 +4,36 @@ declare(strict_types=1);
 namespace NeuroFinder\Profiles;
 
 use NeuroFinder\Contracts\DataProviderInterface;
+use NeuroFinder\Services\SourceReliabilityService;
 
 final class ActiveDataProvider implements DataProviderInterface
 {
+    private ?SourceReliabilityService $sourceReliabilityService = null;
+
+    /**
+     * Obtiene o crea la instancia del servicio de fiabilidad de fuentes
+     */
+    private function getSourceReliabilityService(): SourceReliabilityService
+    {
+        if ($this->sourceReliabilityService === null) {
+            $this->sourceReliabilityService = new SourceReliabilityService();
+        }
+        return $this->sourceReliabilityService;
+    }
+
+    /**
+     * Obtiene el score de un artículo: usa el de la BD si existe, sino busca en el JSON de fuentes
+     */
+    private function getArticleScore(?float $dbScore, ?string $source): float
+    {
+        // Si hay score en la BD, usarlo
+        if ($dbScore !== null && is_numeric($dbScore)) {
+            return (float)$dbScore;
+        }
+
+        // Si no hay score en la BD, buscar en el servicio de fiabilidad
+        return $this->getSourceReliabilityService()->getReliabilityScore($source);
+    }
     public function search(array $request): array
     {
         $query = trim((string)($request['query'] ?? ''));
@@ -178,11 +205,12 @@ final class ActiveDataProvider implements DataProviderInterface
                     'title' => $row['title'],
                     'publishedAt' => $row['publishedAt'],
                     'processedAt' => $row['processedAt'] ?? '',
-                    'score' => $row['score'] !== null ? (float)$row['score'] : 0.0,
+                    'score' => $this->getArticleScore($row['score'] !== null ? (float)$row['score'] : null, $row['source'] ?? null),
                     'source' => $row['source'] ?? '',
                     'language' => $row['language'] ?? '',
                     'tags' => $tags,
-                    'type' => $type
+                    'type' => $type,
+                    'searchSource' => 'bd' // Búsqueda realizada en base de datos (sin query)
                 ];
                 
                 // Agregar campos específicos según el tipo
@@ -326,8 +354,10 @@ final class ActiveDataProvider implements DataProviderInterface
 
         // Obtener resultados de Azure
         $azureResults = $data['resultados'] ?? [];
+        
+        // Si Azure no devuelve resultados, buscar en la BD por palabras clave
         if (empty($azureResults)) {
-            return [];
+            return $this->searchLocalByQuery($query, $filters);
         }
 
         // Filtrar resultados por score mínimo (>= 0.78)
@@ -338,7 +368,8 @@ final class ActiveDataProvider implements DataProviderInterface
         });
 
         if (empty($azureResults)) {
-            return [];
+            // Si después de filtrar no hay resultados, buscar en BD
+            return $this->searchLocalByQuery($query, $filters);
         }
 
         // Extraer URLs de los resultados filtrados
@@ -350,13 +381,18 @@ final class ActiveDataProvider implements DataProviderInterface
         }
 
         // Buscar los artículos en la base de datos usando las URLs
-        return $this->getArticlesByUrls($urls, $filters);
+        // Marcar como obtenidos del motor de búsqueda (Azure)
+        return $this->getArticlesByUrls($urls, $filters, 'motor');
     }
 
     /**
      * Obtiene artículos de la base de datos por sus URLs
+     * 
+     * @param array $urls URLs de los artículos a buscar
+     * @param array $filters Filtros a aplicar
+     * @param string $searchSource Origen de la búsqueda: 'motor' (Azure) o 'bd' (base de datos)
      */
-    private function getArticlesByUrls(array $urls, array $filters): array
+    private function getArticlesByUrls(array $urls, array $filters, string $searchSource = 'bd'): array
     {
         // Obtener variables de entorno de la base de datos
         $host = $this->getEnvVar('DB_HOST') ?: 'localhost';
@@ -575,11 +611,217 @@ final class ActiveDataProvider implements DataProviderInterface
                     'title' => $row['title'],
                     'publishedAt' => $row['publishedAt'],
                     'processedAt' => $row['processedAt'] ?? '',
-                    'score' => $row['score'] !== null ? (float)$row['score'] : 0.0,
+                    'score' => $this->getArticleScore($row['score'] !== null ? (float)$row['score'] : null, $row['source'] ?? null),
                     'source' => $row['source'] ?? '',
                     'language' => $row['language'] ?? '',
                     'tags' => $tags,
-                    'type' => $type
+                    'type' => $type,
+                    'searchSource' => $searchSource // Origen de la búsqueda
+                ];
+                
+                // Agregar campos específicos según el tipo
+                if ($type === 'news') {
+                    $result['summary'] = $row['summary'] ?? $row['excerpt'] ?? '';
+                    $result['url'] = $row['id']; // Para noticias, url es el id
+                } else {
+                    $result['excerpt'] = $row['excerpt'] ?? '';
+                }
+
+                $articles[] = $result;
+            }
+
+            return $articles;
+        } catch (\PDOException $e) {
+            throw new \RuntimeException('Error al conectar con la base de datos: ' . $e->getMessage(), 0, $e);
+        }
+    }
+
+    /**
+     * Búsqueda local en la base de datos por palabras clave usando LIKE o FULLTEXT
+     */
+    private function searchLocalByQuery(string $query, array $filters): array
+    {
+        // Obtener variables de entorno de la base de datos
+        $host = $this->getEnvVar('DB_HOST') ?: 'localhost';
+        $port = (int)($this->getEnvVar('DB_PORT') ?: 3306);
+        $database = $this->getEnvVar('DB_DATABASE') ?: '';
+        $username = $this->getEnvVar('DB_USERNAME') ?: '';
+        $password = $this->getEnvVar('DB_PASSWORD') ?: '';
+
+        if ($database === '' || $username === '') {
+            throw new \RuntimeException('Variables de entorno de base de datos no configuradas.');
+        }
+
+        // Crear conexión PDO
+        $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $host, $port, $database);
+        
+        try {
+            $pdo = new \PDO($dsn, $username, $password, [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+            ]);
+
+            // Limpiar y preparar la query para búsqueda
+            $searchTerms = trim($query);
+            if ($searchTerms === '') {
+                return [];
+            }
+
+            // Construir consulta SQL usando FULLTEXT si está disponible, sino usar LIKE
+            $sql = "SELECT 
+                        url as id,
+                        title,
+                        excerpt,
+                        summary,
+                        published_at as publishedAt,
+                        processed_at as processedAt,
+                        score,
+                        source,
+                        language,
+                        tags,
+                        tipo as type
+                    FROM items 
+                    WHERE tipo IN ('article', 'news')";
+            
+            $params = [];
+
+            // Usar LIKE para buscar en título, excerpt y summary
+            $likeConditions = [];
+            
+            // Dividir la query en palabras
+            $words = preg_split('/\s+/', $searchTerms);
+            $words = array_filter($words, static fn(string $word): bool => strlen(trim($word)) > 0);
+            
+            if (!empty($words)) {
+                // Construir condiciones LIKE para cada palabra
+                foreach ($words as $i => $word) {
+                    $keyTitle = ':search_title_' . $i;
+                    $keyExcerpt = ':search_excerpt_' . $i;
+                    $keySummary = ':search_summary_' . $i;
+                    $likeConditions[] = "(title LIKE " . $keyTitle . " OR excerpt LIKE " . $keyExcerpt . " OR summary LIKE " . $keySummary . ")";
+                    $searchTerm = '%' . $word . '%';
+                    $params[$keyTitle] = $searchTerm;
+                    $params[$keyExcerpt] = $searchTerm;
+                    $params[$keySummary] = $searchTerm;
+                }
+                
+                // Usar OR entre palabras (al menos una debe coincidir)
+                $sql .= " AND (" . implode(' OR ', $likeConditions) . ")";
+            }
+            
+            // Aplicar filtros adicionales (igual que en searchLocal)
+            $documentTypes = (array)($filters['documentTypes'] ?? []);
+            if ($documentTypes !== []) {
+                $allowedTypes = [];
+                foreach ($documentTypes as $docType) {
+                    $docType = trim((string)$docType);
+                    if ($docType === 'news') {
+                        $allowedTypes[] = 'news';
+                    } elseif (in_array($docType, ['article', 'paper', 'clinical-report'], true)) {
+                        $allowedTypes[] = 'article';
+                    }
+                }
+                
+                $allowedTypes = array_unique($allowedTypes);
+                
+                if (!empty($allowedTypes)) {
+                    $docPlaceholders = [];
+                    foreach ($allowedTypes as $i => $docType) {
+                        $key = ':doc_type_' . $i;
+                        $docPlaceholders[] = $key;
+                        $params[$key] = $docType;
+                    }
+                    $sql .= " AND tipo IN (" . implode(', ', $docPlaceholders) . ")";
+                } else {
+                    return [];
+                }
+            }
+            
+            // Filtro por tipos de demencia
+            $dementiaTypes = (array)($filters['dementiaTypes'] ?? []);
+            if ($dementiaTypes !== []) {
+                $conditions = [];
+                foreach ($dementiaTypes as $i => $type) {
+                    $key = ':dementia_json_' . $i;
+                    $conditions[] = "JSON_CONTAINS(tags, " . $key . ")";
+                    $params[$key] = json_encode([$type]);
+                }
+                $sql .= " AND (" . implode(' OR ', $conditions) . ")";
+            }
+            
+            // Filtro por idiomas
+            $languages = (array)($filters['languages'] ?? []);
+            if ($languages !== []) {
+                $placeholders = [];
+                foreach ($languages as $i => $lang) {
+                    $key = ':lang_' . $i;
+                    $placeholders[] = $key;
+                    $params[$key] = $lang;
+                }
+                $sql .= " AND language IN (" . implode(', ', $placeholders) . ")";
+            }
+            
+            // Filtro por score mínimo
+            $minScore = $filters['minScore'] ?? null;
+            if (is_numeric($minScore)) {
+                $sql .= " AND score >= :minScore";
+                $params[':minScore'] = (float)$minScore;
+            }
+            
+            // Filtro por fecha desde
+            $dateFrom = $filters['dateFrom'] ?? null;
+            if (is_string($dateFrom) && $dateFrom !== '') {
+                $sql .= " AND published_at >= :dateFrom";
+                $params[':dateFrom'] = $dateFrom;
+            }
+            
+            // Filtro por fecha hasta
+            $dateTo = $filters['dateTo'] ?? null;
+            if (is_string($dateTo) && $dateTo !== '') {
+                $sql .= " AND published_at <= :dateTo";
+                $params[':dateTo'] = $dateTo;
+            }
+            
+            // Ordenar
+            $sortBy = $filters['sortBy'] ?? 'score';
+            if ($sortBy === 'date') {
+                $sql .= " ORDER BY published_at DESC";
+            } else {
+                $sql .= " ORDER BY score DESC";
+            }
+            
+            // Límite (por defecto 50)
+            $sql .= " LIMIT 50";
+            
+            $stmt = $pdo->prepare($sql);
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
+            $stmt->execute();
+            $results = $stmt->fetchAll();
+
+            // Convertir los resultados al formato esperado
+            $articles = [];
+            foreach ($results as $row) {
+                $tags = json_decode($row['tags'] ?? '[]', true);
+                if (!is_array($tags)) {
+                    $tags = [];
+                }
+
+                $type = $row['type'] ?? 'article';
+                
+                // Construir resultado base
+                $result = [
+                    'id' => $row['id'],
+                    'title' => $row['title'],
+                    'publishedAt' => $row['publishedAt'],
+                    'processedAt' => $row['processedAt'] ?? '',
+                    'score' => $this->getArticleScore($row['score'] !== null ? (float)$row['score'] : null, $row['source'] ?? null),
+                    'source' => $row['source'] ?? '',
+                    'language' => $row['language'] ?? '',
+                    'tags' => $tags,
+                    'type' => $type,
+                    'searchSource' => 'bd' // Búsqueda realizada en base de datos
                 ];
                 
                 // Agregar campos específicos según el tipo
@@ -670,7 +912,7 @@ final class ActiveDataProvider implements DataProviderInterface
                 'summary' => $row['summary'] ?? '',
                 'publishedAt' => $row['publishedAt'],
                 'processedAt' => $row['processedAt'] ?? '',
-                'score' => $row['score'] !== null ? (float)$row['score'] : 0.0,
+                'score' => $this->getArticleScore($row['score'] !== null ? (float)$row['score'] : null, $row['source'] ?? null),
                 'source' => $row['source'] ?? '',
                 'language' => $row['language'] ?? '',
                 'tags' => $tags,
@@ -739,7 +981,7 @@ final class ActiveDataProvider implements DataProviderInterface
                     'excerpt' => $row['excerpt'] ?? '',
                     'publishedAt' => $row['publishedAt'],
                     'processedAt' => $row['processedAt'] ?? '',
-                    'score' => $row['score'] !== null ? (float)$row['score'] : 0.0,
+                    'score' => $this->getArticleScore($row['score'] !== null ? (float)$row['score'] : null, $row['source'] ?? null),
                     'source' => $row['source'] ?? '',
                     'language' => $row['language'] ?? '',
                     'tags' => $articleTags
@@ -1010,7 +1252,7 @@ final class ActiveDataProvider implements DataProviderInterface
                     'excerpt' => $row['excerpt'] ?? '',
                     'publishedAt' => $row['publishedAt'],
                     'processedAt' => $row['processedAt'] ?? '',
-                    'score' => $row['score'] !== null ? (float)$row['score'] : 0.0,
+                    'score' => $this->getArticleScore($row['score'] !== null ? (float)$row['score'] : null, $row['source'] ?? null),
                     'source' => $row['source'] ?? '',
                     'language' => $row['language'] ?? '',
                     'tags' => $tags

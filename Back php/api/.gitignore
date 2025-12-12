@@ -1,0 +1,14 @@
+# Archivos generados
+data/sources_reliability.json
+
+# Variables de entorno
+.env
+*.env
+
+# Logs
+*.log
+
+# Archivos temporales
+*.tmp
+*.bak
+*~

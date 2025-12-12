@@ -22,6 +22,7 @@
   "SEARCH": {
     "TITLE": "Results",
     "NO_RESULTS": "No matches found for your query.",
+    "LOADING": "Searching...",
     "FILTERS": "Filters",
     "CLEAR": "Clear filters",
     "APPLY": "Apply filters",
@@ -34,6 +35,7 @@
     "PUBLISHED_AT": "Published on",
     "PROCESSED_AT": "Processed on",
     "SOURCE_LINK": "Open original source",
+    "VIEW_DETAIL": "View detail",
     "LABELS": "Tags",
     "RELATED": "Related media",
     "KEY_POINTS": "Key insights",

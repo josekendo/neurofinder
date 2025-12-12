@@ -5,6 +5,53 @@
   height: 100%;
 
   mat-card-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .type-badge-wrapper {
+      margin-bottom: 4px;
+
+      .type-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        height: 24px;
+        padding: 0 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        
+        &.type-article {
+          background-color: #dbeafe;
+          color: #1e40af;
+        }
+        
+        &.type-news {
+          background-color: #fef3c7;
+          color: #92400e;
+        }
+        
+        &.type-paper {
+          background-color: #dcfce7;
+          color: #166534;
+        }
+        
+        &.type-clinical-report {
+          background-color: #f3e8ff;
+          color: #6b21a8;
+        }
+        
+        &.type-guideline {
+          background-color: #fce7f3;
+          color: #9f1239;
+        }
+        
+        &.type-dataset {
+          background-color: #e0f2fe;
+          color: #075985;
+        }
+      }
+    }
+
     mat-card-title {
       font-weight: 600;
       line-height: 1.35;
@@ -38,7 +85,14 @@
 
   mat-card-actions {
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
+    padding-top: 8px;
+
+    a {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
   }
 }
 

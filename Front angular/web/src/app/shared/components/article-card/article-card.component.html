@@ -1,5 +1,12 @@
 <mat-card appearance="outlined" class="article-card">
   <mat-card-header>
+    @if (showTypeBadge) {
+      <div class="type-badge-wrapper">
+        <mat-chip class="type-badge" [ngClass]="'type-' + article.type">
+          {{ getTypeLabel(article.type) }}
+        </mat-chip>
+      </div>
+    }
     <mat-card-title>{{ article.title }}</mat-card-title>
     <mat-card-subtitle>
       <span>{{ article.source }}</span>
@@ -23,7 +30,7 @@
     <mat-card-actions>
       <a mat-button color="primary" [routerLink]="['/articles']" [queryParams]="{ url: article.id }">
         <mat-icon>open_in_new</mat-icon>
-        Detalles
+        {{ 'DETAIL.VIEW_DETAIL' | translate }}
       </a>
     </mat-card-actions>
   }

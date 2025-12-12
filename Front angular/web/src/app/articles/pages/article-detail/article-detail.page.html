@@ -39,7 +39,7 @@
         <h3>{{ 'DETAIL.RELATED' | translate }}</h3>
         <div class="related-grid">
           @for (related of article.related; track related.id) {
-            <app-article-card [article]="related" [showActions]="true"></app-article-card>
+            <app-article-card [article]="related" [showActions]="true" [showTypeBadge]="false"></app-article-card>
           }
         </div>
       </section>

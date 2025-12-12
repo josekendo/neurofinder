@@ -31,7 +31,7 @@
   }
   <div class="articles">
     @for (article of articles$ | async; track article.id) {
-      <app-article-card [article]="article" (tagSelected)="handleTag($event)"></app-article-card>
+      <app-article-card [article]="article" [showTypeBadge]="false" (tagSelected)="handleTag($event)"></app-article-card>
     } @empty {
       <p class="empty">{{ 'HOME.NO_ARTICLES' | translate }}</p>
     }

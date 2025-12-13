@@ -1,0 +1,38 @@
+@startuml Diagrama_Funciones_Azure
+!theme plain
+skinparam defaultFontSize 9
+skinparam componentStyle rectangle
+skinparam nodesep 50
+skinparam ranksep 60
+
+title Azure Functions - Flujo de Ejecución
+
+actor "Cliente" as C #LightBlue
+component "Tareas Cron\nServidor" as Cron #LightYellow
+
+package "Azure Functions" {
+  component "1. Recopilador" as R #Wheat
+  component "2. Procesador" as P #Wheat
+  component "3. Evaluador" as E #Wheat
+  component "4. Buscador" as B #Wheat
+  
+  R -right-> P
+  P -right-> E
+}
+
+database "Azure Storage" as S #LightCyan
+cloud "Azure OpenAI" as O #LightGreen
+
+Cron --> R
+Cron --> P
+Cron --> E
+C --> B
+
+R ..> S
+P ..> S
+E ..> S
+E ..> O
+B ..> S
+B ..> O
+
+@enduml

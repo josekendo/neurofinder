@@ -6,6 +6,14 @@
   mat-card {
     height: 100%;
 
+    mat-card-subtitle {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: #475569;
+    }
+
     mat-card-title {
       font-weight: 600;
       line-height: 1.4;

@@ -73,7 +73,22 @@ export const selectSearchState = createFeatureSelector<SearchState>(SEARCH_FEATU
 
 export const selectQuery = createSelector(selectSearchState, (state) => state.query);
 export const selectFilters = createSelector(selectSearchState, (state) => state.filters);
-export const selectResults = createSelector(selectSearchState, (state) => state.results);
+export const selectResults = createSelector(selectSearchState, (state) => {
+  const results = [...state.results];
+  const sortBy = state.filters.sortBy;
+
+  if (sortBy === 'date') {
+    // Ordenar por fecha de publicación: más reciente primero
+    return results.sort((a: ArticleSummary, b: ArticleSummary) => {
+      const dateA = new Date(a.publishedAt).getTime() || 0;
+      const dateB = new Date(b.publishedAt).getTime() || 0;
+      return dateB - dateA;
+    });
+  }
+
+  // Ordenar por fiabilidad (score): más alta primero
+  return results.sort((a: ArticleSummary, b: ArticleSummary) => b.score - a.score);
+});
 export const selectLoading = createSelector(selectSearchState, (state) => state.loading);
 export const selectError = createSelector(selectSearchState, (state) => state.error);
 export const selectLastRequest = createSelector(selectSearchState, (state) => state.lastRequest);

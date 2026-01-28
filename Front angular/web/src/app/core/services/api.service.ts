@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { ArticleDetail, ArticleSummary, MetricsSnapshot, NewsItem, ReportRequest, SearchRequest } from '../models/content.models';
 import { environment } from '../../../environments/environment';
 
@@ -29,7 +29,15 @@ export class ApiService {
     }
     const queryString = params.toString();
     const url = `${this.baseUrl}/news/latest${queryString ? '?' + queryString : ''}`;
-    return this.http.get<NewsItem[]>(url);
+    return this.http.get<NewsItem[]>(url).pipe(
+      map((news) =>
+        (news ?? []).map((item) => ({
+          ...item,
+          // Si el backend no envía score, usar 0.1 por defecto
+          score: item?.score ?? 0.1
+        }))
+      )
+    );
   }
 
   getMetrics(): Observable<MetricsSnapshot> {

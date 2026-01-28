@@ -1034,7 +1034,9 @@ final class ActiveDataProvider implements DataProviderInterface
                             published_at as publishedAt,
                             url,
                             image_url as imageUrl,
-                            tags
+                            tags,
+                            score,
+                            source
                     FROM items 
                     WHERE tipo = 'news'
                     AND (language = :language OR language IS NULL)
@@ -1049,7 +1051,9 @@ final class ActiveDataProvider implements DataProviderInterface
                             published_at as publishedAt,
                             url,
                             image_url as imageUrl,
-                            tags
+                            tags,
+                            score,
+                            source
                         FROM items 
                         WHERE tipo = 'news'
                         AND language = :language
@@ -1082,7 +1086,13 @@ final class ActiveDataProvider implements DataProviderInterface
                     'publishedAt' => $row['publishedAt'],
                     'url' => $row['url'],
                     'imageUrl' => $row['imageUrl'] ?? null,
-                    'tags' => $tags
+                    'tags' => $tags,
+                    // Score de fiabilidad: usar el de BD si existe, si no el de la fuente,
+                    // y por defecto 0.1 si no se encuentra nada
+                    'score' => $this->getArticleScore(
+                        isset($row['score']) && is_numeric($row['score']) ? (float)$row['score'] : null,
+                        $row['source'] ?? null
+                    )
                 ];
             }
 

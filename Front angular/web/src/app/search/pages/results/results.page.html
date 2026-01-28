@@ -56,7 +56,11 @@
                   </mat-chip>
                 </div>
                 <mat-card-title>{{ item.title }}</mat-card-title>
-                <mat-card-subtitle>{{ item.publishedAt | date : 'mediumDate' }}</mat-card-subtitle>
+                <mat-card-subtitle>
+                  <span>{{ item.publishedAt | date : 'mediumDate' }}</span>
+                  <span class="dot">•</span>
+                  <span>{{ item.score | number : '1.0-2' }}</span>
+                </mat-card-subtitle>
               </mat-card-header>
               <mat-card-content>
                 <p>{{ item.summary }}</p>

@@ -28,6 +28,7 @@ export interface NewsItem {
   url: string;
   imageUrl?: string;
   tags: string[];
+  score: number;
 }
 
 export interface SearchFilters {

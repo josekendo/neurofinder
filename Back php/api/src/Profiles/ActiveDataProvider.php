@@ -150,12 +150,7 @@ final class ActiveDataProvider implements DataProviderInterface
                 $sql .= " AND language IN (" . implode(', ', $placeholders) . ")";
             }
             
-            // Filtro por score mínimo
-            $minScore = $filters['minScore'] ?? null;
-            if (is_numeric($minScore)) {
-                $sql .= " AND score >= :minScore";
-                $params[':minScore'] = (float)$minScore;
-            }
+            // Nota: El filtro minScore se aplicará después de obtener los resultados y calcular el score
             
             // Filtro por fecha desde
             $dateFrom = $filters['dateFrom'] ?? null;
@@ -222,6 +217,18 @@ final class ActiveDataProvider implements DataProviderInterface
                 }
 
                 $articles[] = $result;
+            }
+
+            // Aplicar filtro minScore después de obtener los resultados y calcular el score
+            $minScore = $filters['minScore'] ?? null;
+            if ($minScore !== null && is_numeric($minScore) && (float)$minScore > 0) {
+                $minScoreFloat = (float)$minScore;
+                $articles = array_filter($articles, static function(array $article) use ($minScoreFloat): bool {
+                    $score = $article['score'] ?? 0.0;
+                    return is_numeric($score) && (float)$score >= $minScoreFloat;
+                });
+                // Reindexar el array después del filtro
+                $articles = array_values($articles);
             }
 
             return $articles;
@@ -360,7 +367,9 @@ final class ActiveDataProvider implements DataProviderInterface
             return $this->searchLocalByQuery($query, $filters);
         }
 
-        // Filtrar resultados por score mínimo (>= 0.78)
+        // Filtrar resultados por score mínimo de relevancia de Azure (>= 0.78)
+        // Este score es de relevancia semántica, no de fiabilidad
+        // El minScore del usuario se aplicará después al score de fiabilidad almacenado en la BD
         $minScore = 0.78;
         $azureResults = array_filter($azureResults, static function(array $result) use ($minScore): bool {
             $score = $result['score'] ?? 0.0;
@@ -546,12 +555,7 @@ final class ActiveDataProvider implements DataProviderInterface
             // Nota: No filtramos por language aquí porque ya lo hicimos en la búsqueda de URLs
             // Si hay filtro de idioma, ya buscamos solo URLs con ese sufijo
             // Si no hay filtro, buscamos todas las variantes de idioma
-            
-            $minScore = $filters['minScore'] ?? null;
-            if (is_numeric($minScore)) {
-                $sql .= " AND score >= :minScore";
-                $params[':minScore'] = (float)$minScore;
-            }
+            // Nota: El filtro minScore se aplicará después de obtener los resultados y calcular el score
             
             $dateFrom = $filters['dateFrom'] ?? null;
             if (is_string($dateFrom) && $dateFrom !== '') {
@@ -628,6 +632,18 @@ final class ActiveDataProvider implements DataProviderInterface
                 }
 
                 $articles[] = $result;
+            }
+
+            // Aplicar filtro minScore después de obtener los resultados y calcular el score
+            $minScore = $filters['minScore'] ?? null;
+            if ($minScore !== null && is_numeric($minScore) && (float)$minScore > 0) {
+                $minScoreFloat = (float)$minScore;
+                $articles = array_filter($articles, static function(array $article) use ($minScoreFloat): bool {
+                    $score = $article['score'] ?? 0.0;
+                    return is_numeric($score) && (float)$score >= $minScoreFloat;
+                });
+                // Reindexar el array después del filtro
+                $articles = array_values($articles);
             }
 
             return $articles;
@@ -761,12 +777,7 @@ final class ActiveDataProvider implements DataProviderInterface
                 $sql .= " AND language IN (" . implode(', ', $placeholders) . ")";
             }
             
-            // Filtro por score mínimo
-            $minScore = $filters['minScore'] ?? null;
-            if (is_numeric($minScore)) {
-                $sql .= " AND score >= :minScore";
-                $params[':minScore'] = (float)$minScore;
-            }
+            // Nota: El filtro minScore se aplicará después de obtener los resultados y calcular el score
             
             // Filtro por fecha desde
             $dateFrom = $filters['dateFrom'] ?? null;
@@ -833,6 +844,18 @@ final class ActiveDataProvider implements DataProviderInterface
                 }
 
                 $articles[] = $result;
+            }
+
+            // Aplicar filtro minScore después de obtener los resultados y calcular el score
+            $minScore = $filters['minScore'] ?? null;
+            if ($minScore !== null && is_numeric($minScore) && (float)$minScore > 0) {
+                $minScoreFloat = (float)$minScore;
+                $articles = array_filter($articles, static function(array $article) use ($minScoreFloat): bool {
+                    $score = $article['score'] ?? 0.0;
+                    return is_numeric($score) && (float)$score >= $minScoreFloat;
+                });
+                // Reindexar el array después del filtro
+                $articles = array_values($articles);
             }
 
             return $articles;
@@ -1270,6 +1293,234 @@ final class ActiveDataProvider implements DataProviderInterface
             }
 
             return $articles;
+        } catch (\PDOException $e) {
+            throw new \RuntimeException('Error al conectar con la base de datos: ' . $e->getMessage(), 0, $e);
+        }
+    }
+
+    public function getNewsPaginated(?string $language = null, int $page = 1, int $pageSize = 20): array
+    {
+        // Obtener variables de entorno de la base de datos
+        $host = $this->getEnvVar('DB_HOST') ?: 'localhost';
+        $port = (int)($this->getEnvVar('DB_PORT') ?: 3306);
+        $database = $this->getEnvVar('DB_DATABASE') ?: '';
+        $username = $this->getEnvVar('DB_USERNAME') ?: '';
+        $password = $this->getEnvVar('DB_PASSWORD') ?: '';
+
+        if ($database === '' || $username === '') {
+            throw new \RuntimeException('Variables de entorno de base de datos no configuradas.');
+        }
+
+        // Si no se especifica idioma, usar 'en' por defecto
+        $lang = $language ?? 'en';
+
+        // Validar y ajustar parámetros de paginación
+        $page = max(1, $page);
+        $pageSize = max(1, min(100, $pageSize));
+        $offset = ($page - 1) * $pageSize;
+
+        // Crear conexión PDO
+        $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $host, $port, $database);
+        
+        try {
+            $pdo = new \PDO($dsn, $username, $password, [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+            ]);
+
+            // Primero obtener el total de noticias
+            if ($lang === 'en') {
+                $countSql = "SELECT COUNT(*) as total FROM items WHERE tipo = 'news' AND (language = :language OR language IS NULL)";
+            } else {
+                $countSql = "SELECT COUNT(*) as total FROM items WHERE tipo = 'news' AND language = :language";
+            }
+            
+            $countStmt = $pdo->prepare($countSql);
+            $countStmt->bindValue(':language', $lang, \PDO::PARAM_STR);
+            $countStmt->execute();
+            $totalResult = $countStmt->fetch();
+            $total = (int)($totalResult['total'] ?? 0);
+
+            // Obtener las noticias paginadas ordenadas por orden de inclusión en la BD
+            if ($lang === 'en') {
+                $sql = "SELECT 
+                            url as id,
+                            title,
+                            summary,
+                            published_at as publishedAt,
+                            url,
+                            image_url as imageUrl,
+                            tags,
+                            score,
+                            source
+                        FROM items 
+                        WHERE tipo = 'news'
+                        AND (language = :language OR language IS NULL)
+                        ORDER BY created_at DESC
+                        LIMIT :limit OFFSET :offset";
+            } else {
+                $sql = "SELECT 
+                            url as id,
+                            title,
+                            summary,
+                            published_at as publishedAt,
+                            url,
+                            image_url as imageUrl,
+                            tags,
+                            score,
+                            source
+                        FROM items 
+                        WHERE tipo = 'news'
+                        AND language = :language
+                        ORDER BY created_at DESC
+                        LIMIT :limit OFFSET :offset";
+            }
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->bindValue(':language', $lang, \PDO::PARAM_STR);
+            $stmt->bindValue(':limit', $pageSize, \PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+            $stmt->execute();
+            $results = $stmt->fetchAll();
+
+            // Convertir los resultados al formato esperado
+            $news = [];
+            foreach ($results as $row) {
+                $tags = json_decode($row['tags'] ?? '[]', true);
+                if (!is_array($tags)) {
+                    $tags = [];
+                }
+
+                $news[] = [
+                    'id' => $row['id'],
+                    'title' => $row['title'],
+                    'summary' => $row['summary'] ?? '',
+                    'publishedAt' => $row['publishedAt'],
+                    'url' => $row['url'],
+                    'imageUrl' => $row['imageUrl'] ?? null,
+                    'tags' => $tags,
+                    'score' => $this->getArticleScore(
+                        isset($row['score']) && is_numeric($row['score']) ? (float)$row['score'] : null,
+                        $row['source'] ?? null
+                    )
+                ];
+            }
+
+            $totalPages = (int)ceil($total / $pageSize);
+
+            return [
+                'data' => $news,
+                'pagination' => [
+                    'page' => $page,
+                    'pageSize' => $pageSize,
+                    'total' => $total,
+                    'totalPages' => $totalPages,
+                    'hasNext' => $page < $totalPages,
+                    'hasPrev' => $page > 1
+                ]
+            ];
+        } catch (\PDOException $e) {
+            throw new \RuntimeException('Error al conectar con la base de datos: ' . $e->getMessage(), 0, $e);
+        }
+    }
+
+    public function getArticlesPaginated(?string $language = null, int $page = 1, int $pageSize = 20): array
+    {
+        // Obtener variables de entorno de la base de datos
+        $host = $this->getEnvVar('DB_HOST') ?: 'localhost';
+        $port = (int)($this->getEnvVar('DB_PORT') ?: 3306);
+        $database = $this->getEnvVar('DB_DATABASE') ?: '';
+        $username = $this->getEnvVar('DB_USERNAME') ?: '';
+        $password = $this->getEnvVar('DB_PASSWORD') ?: '';
+
+        if ($database === '' || $username === '') {
+            throw new \RuntimeException('Variables de entorno de base de datos no configuradas.');
+        }
+
+        // Si no se especifica idioma, usar 'en' por defecto
+        $lang = $language ?? 'en';
+
+        // Validar y ajustar parámetros de paginación
+        $page = max(1, $page);
+        $pageSize = max(1, min(100, $pageSize));
+        $offset = ($page - 1) * $pageSize;
+
+        // Crear conexión PDO
+        $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $host, $port, $database);
+        
+        try {
+            $pdo = new \PDO($dsn, $username, $password, [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+            ]);
+
+            // Primero obtener el total de artículos
+            $countSql = "SELECT COUNT(*) as total FROM items WHERE tipo = 'article' AND language = :language";
+            $countStmt = $pdo->prepare($countSql);
+            $countStmt->bindValue(':language', $lang, \PDO::PARAM_STR);
+            $countStmt->execute();
+            $totalResult = $countStmt->fetch();
+            $total = (int)($totalResult['total'] ?? 0);
+
+            // Obtener los artículos paginados ordenados por orden de inclusión en la BD
+            $sql = "SELECT 
+                        url as id,
+                        title,
+                        excerpt,
+                        published_at as publishedAt,
+                        processed_at as processedAt,
+                        score,
+                        source,
+                        language,
+                        tags
+                    FROM items 
+                    WHERE tipo = 'article'
+                    AND language = :language
+                    ORDER BY created_at DESC
+                    LIMIT :limit OFFSET :offset";
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->bindValue(':language', $lang, \PDO::PARAM_STR);
+            $stmt->bindValue(':limit', $pageSize, \PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+            $stmt->execute();
+            $results = $stmt->fetchAll();
+
+            // Convertir los resultados al formato esperado
+            $articles = [];
+            foreach ($results as $row) {
+                $tags = json_decode($row['tags'] ?? '[]', true);
+                if (!is_array($tags)) {
+                    $tags = [];
+                }
+
+                $articles[] = [
+                    'id' => $row['id'],
+                    'title' => $row['title'],
+                    'excerpt' => $row['excerpt'] ?? '',
+                    'publishedAt' => $row['publishedAt'],
+                    'processedAt' => $row['processedAt'] ?? '',
+                    'score' => $this->getArticleScore($row['score'] !== null ? (float)$row['score'] : null, $row['source'] ?? null),
+                    'source' => $row['source'] ?? '',
+                    'language' => $row['language'] ?? '',
+                    'tags' => $tags,
+                    'type' => 'article'
+                ];
+            }
+
+            $totalPages = (int)ceil($total / $pageSize);
+
+            return [
+                'data' => $articles,
+                'pagination' => [
+                    'page' => $page,
+                    'pageSize' => $pageSize,
+                    'total' => $total,
+                    'totalPages' => $totalPages,
+                    'hasNext' => $page < $totalPages,
+                    'hasPrev' => $page > 1
+                ]
+            ];
         } catch (\PDOException $e) {
             throw new \RuntimeException('Error al conectar con la base de datos: ' . $e->getMessage(), 0, $e);
         }

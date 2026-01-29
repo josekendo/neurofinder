@@ -35,6 +35,24 @@ interface DataProviderInterface
      * @return array<int, array<string, mixed>>
      */
     public function getLatestArticles(int $limit = 4, ?string $language = null): array;
+
+    /**
+     * Obtiene noticias paginadas por idioma
+     * @param string|null $language Idioma para filtrar las noticias (por defecto 'en' si es null)
+     * @param int $page Número de página (empezando en 1)
+     * @param int $pageSize Tamaño de página (número de elementos por página)
+     * @return array<string, mixed> Array con 'data' (noticias), 'pagination' (info de paginación)
+     */
+    public function getNewsPaginated(?string $language = null, int $page = 1, int $pageSize = 20): array;
+
+    /**
+     * Obtiene artículos paginados por idioma
+     * @param string|null $language Idioma para filtrar los artículos (por defecto 'en' si es null)
+     * @param int $page Número de página (empezando en 1)
+     * @param int $pageSize Tamaño de página (número de elementos por página)
+     * @return array<string, mixed> Array con 'data' (artículos), 'pagination' (info de paginación)
+     */
+    public function getArticlesPaginated(?string $language = null, int $page = 1, int $pageSize = 20): array;
 }
 
 

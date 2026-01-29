@@ -17,6 +17,10 @@
       <mat-icon>diversity_3</mat-icon>
       {{ 'NAV.ABOUT' | translate }}
     </button>
+    <button mat-button routerLink="/archive" routerLinkActive="active">
+      <mat-icon>archive</mat-icon>
+      {{ 'NAV.ARCHIVE' | translate }}
+    </button>
     <button mat-button routerLink="/news" routerLinkActive="active">
       <mat-icon>article</mat-icon>
       {{ 'NAV.NEWS' | translate }}
@@ -59,6 +63,10 @@
       <mat-icon>diversity_3</mat-icon>
       <span>{{ 'NAV.ABOUT' | translate }}</span>
     </button>
+    <button mat-menu-item routerLink="/archive">
+      <mat-icon>archive</mat-icon>
+      <span>{{ 'NAV.ARCHIVE' | translate }}</span>
+    </button>
     <button mat-menu-item routerLink="/news">
       <mat-icon>article</mat-icon>
       <span>{{ 'NAV.NEWS' | translate }}</span>
@@ -92,6 +100,7 @@
   <section class="links">
     <a routerLink="/search" routerLinkActive="active">{{ 'NAV.SEARCH' | translate }}</a>
     <a routerLink="/news" routerLinkActive="active">{{ 'NAV.NEWS' | translate }}</a>
+    <a routerLink="/archive" routerLinkActive="active">{{ 'NAV.ARCHIVE' | translate }}</a>
     <a routerLink="/quienes-somos" routerLinkActive="active">{{ 'NAV.ABOUT' | translate }}</a>
     <a href="mailto:support&#64;neurofinder.org">support&#64;neurofinder.org</a>
   </section>

@@ -29,6 +29,11 @@ export const routes: Routes = [
       import('./about/pages/about/about.page').then((m) => m.AboutPageComponent)
   },
   {
+    path: 'archive',
+    loadComponent: () =>
+      import('./archive/pages/archive/archive.page').then((m) => m.ArchivePageComponent)
+  },
+  {
     path: '404',
     loadComponent: () =>
       import('./errors/pages/not-found/not-found.page').then((m) => m.NotFoundPageComponent)

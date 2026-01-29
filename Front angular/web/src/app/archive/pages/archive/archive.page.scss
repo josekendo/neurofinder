@@ -1,0 +1,74 @@
+.archive-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+
+  .archive-header {
+    text-align: center;
+    margin-bottom: 2rem;
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--primary-color, #1976d2);
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: var(--text-secondary, #666);
+      margin: 0;
+    }
+  }
+
+  .content-tabs {
+    ::ng-deep .mat-mdc-tab-header {
+      border-bottom: 2px solid var(--divider-color, #e0e0e0);
+    }
+
+    ::ng-deep .mat-mdc-tab-label {
+      font-size: 1rem;
+      font-weight: 500;
+      min-width: 150px;
+    }
+  }
+
+  .content-section {
+    margin-top: 2rem;
+    min-height: 400px;
+
+    .loading-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 400px;
+    }
+
+    .articles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+
+      @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-secondary, #666);
+
+      p {
+        font-size: 1.1rem;
+        margin: 0;
+      }
+    }
+
+    ::ng-deep mat-paginator {
+      margin-top: 2rem;
+      background: transparent;
+    }
+  }
+}

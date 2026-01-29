@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
-import { ArticleDetail, ArticleSummary, MetricsSnapshot, NewsItem, ReportRequest, SearchRequest } from '../models/content.models';
+import { ArticleDetail, ArticleSummary, MetricsSnapshot, NewsItem, ReportRequest, SearchRequest, PaginatedResponse } from '../models/content.models';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
@@ -59,6 +59,36 @@ export class ApiService {
 
   reportItem(request: ReportRequest): Observable<{ success: boolean; message?: string }> {
     return this.http.post<{ success: boolean; message?: string }>(`${this.baseUrl}/report`, request);
+  }
+
+  getNewsPaginated(language?: string, page: number = 1, pageSize: number = 20): Observable<PaginatedResponse<NewsItem>> {
+    let params = new HttpParams();
+    if (language) {
+      params = params.set('language', language);
+    }
+    params = params.set('page', page.toString());
+    params = params.set('pageSize', pageSize.toString());
+    
+    return this.http.get<PaginatedResponse<NewsItem>>(`${this.baseUrl}/news/paginated`, { params }).pipe(
+      map((response) => ({
+        ...response,
+        data: response.data.map((item: NewsItem) => ({
+          ...item,
+          score: item?.score ?? 0.1
+        }))
+      }))
+    );
+  }
+
+  getArticlesPaginated(language?: string, page: number = 1, pageSize: number = 20): Observable<PaginatedResponse<ArticleSummary>> {
+    let params = new HttpParams();
+    if (language) {
+      params = params.set('language', language);
+    }
+    params = params.set('page', page.toString());
+    params = params.set('pageSize', pageSize.toString());
+    
+    return this.http.get<PaginatedResponse<ArticleSummary>>(`${this.baseUrl}/articles/paginated`, { params });
   }
 }
 

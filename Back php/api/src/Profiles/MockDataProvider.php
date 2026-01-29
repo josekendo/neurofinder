@@ -174,6 +174,68 @@ final class MockDataProvider implements DataProviderInterface
         $limit = max(1, min(100, $limit));
         return array_slice($sorted, 0, $limit);
     }
+
+    public function getNewsPaginated(?string $language = null, int $page = 1, int $pageSize = 20): array
+    {
+        $lang = $language ?? 'en';
+        $page = max(1, $page);
+        $pageSize = max(1, min(100, $pageSize));
+        
+        // Filtrar por idioma (en el mock, todas están en español por defecto)
+        $filtered = $this->news;
+        
+        $total = count($filtered);
+        $offset = ($page - 1) * $pageSize;
+        $paginated = array_slice($filtered, $offset, $pageSize);
+        
+        $totalPages = (int)ceil($total / $pageSize);
+        
+        return [
+            'data' => $paginated,
+            'pagination' => [
+                'page' => $page,
+                'pageSize' => $pageSize,
+                'total' => $total,
+                'totalPages' => $totalPages,
+                'hasNext' => $page < $totalPages,
+                'hasPrev' => $page > 1
+            ]
+        ];
+    }
+
+    public function getArticlesPaginated(?string $language = null, int $page = 1, int $pageSize = 20): array
+    {
+        $lang = $language ?? 'en';
+        $page = max(1, $page);
+        $pageSize = max(1, min(100, $pageSize));
+        
+        // Filtrar por idioma
+        $filtered = array_filter($this->articles, static fn(array $article): bool => 
+            ($article['language'] ?? 'en') === $lang
+        );
+        
+        // Ordenar por fecha de publicación (más recientes primero)
+        $sorted = array_values($filtered);
+        usort($sorted, static fn(array $a, array $b): int => strcmp($b['publishedAt'], $a['publishedAt']));
+        
+        $total = count($sorted);
+        $offset = ($page - 1) * $pageSize;
+        $paginated = array_slice($sorted, $offset, $pageSize);
+        
+        $totalPages = (int)ceil($total / $pageSize);
+        
+        return [
+            'data' => $paginated,
+            'pagination' => [
+                'page' => $page,
+                'pageSize' => $pageSize,
+                'total' => $total,
+                'totalPages' => $totalPages,
+                'hasNext' => $page < $totalPages,
+                'hasPrev' => $page > 1
+            ]
+        ];
+    }
 }
 
 

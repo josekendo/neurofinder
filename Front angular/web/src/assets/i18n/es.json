@@ -1,6 +1,7 @@
 {
   "NAV": {
     "ABOUT": "Quiénes somos",
+    "ARCHIVE": "Archivo",
     "NEWS": "Noticias",
     "SEARCH": "Buscador",
     "LANGUAGE": "Idioma",
@@ -45,6 +46,14 @@
     "TITLE": "Noticias verificadas automáticamente",
     "DESCRIPTION": "Actualización semanal de novedades contrastadas mediante verificación automática con IA sobre demencias y trastornos neurocognitivos.",
     "READ_MORE": "Leer más"
+  },
+  "ARCHIVE": {
+    "TITLE": "Archivo de Noticias y Artículos",
+    "SUBTITLE": "Explora nuestro archivo completo de noticias y artículos organizados por idioma",
+    "NEWS_TAB": "Noticias",
+    "ARTICLES_TAB": "Artículos",
+    "NO_ARTICLES": "No hay artículos disponibles en este idioma.",
+    "NO_NEWS": "No hay noticias disponibles en este idioma."
   },
   "FILTERS": {
     "DEMENTIA_TYPE": "Tipo de demencia",
@@ -183,6 +192,11 @@
       "FALLBACK_DESCRIPTION": "Consulta análisis y evidencia clínica en NeuroFinder, el buscador avanzado que centraliza información especializada en demencias.",
       "IMAGE_ALT": "{{title}} - análisis de NeuroFinder",
       "FALLBACK_IMAGE_ALT": "Artículo sobre demencias en NeuroFinder"
+    },
+    "ARCHIVE": {
+      "TITLE": "Archivo de Noticias y Artículos | NeuroFinder",
+      "DESCRIPTION": "Explora el archivo completo de noticias y artículos sobre demencias organizados por idioma en NeuroFinder.",
+      "IMAGE_ALT": "Archivo de noticias y artículos en NeuroFinder"
     }
   }
 }

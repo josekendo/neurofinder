@@ -136,6 +136,50 @@ final class Application
             return $this->handleReport();
         }
 
+        if ($method === 'GET' && $path === '/news/paginated') {
+            // Obtener idioma de query string, por defecto 'en'
+            $language = $_GET['language'] ?? null;
+            if ($language !== null) {
+                $language = trim((string)$language);
+                if ($language === '') {
+                    $language = null;
+                }
+            }
+            $language = $language ?? 'en';
+            
+            // Obtener página y tamaño de página
+            $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+            $pageSize = isset($_GET['pageSize']) ? (int)$_GET['pageSize'] : 20;
+            
+            // Validar parámetros
+            $page = max(1, $page);
+            $pageSize = max(1, min(100, $pageSize));
+            
+            return Response::ok($this->provider->getNewsPaginated($language, $page, $pageSize));
+        }
+
+        if ($method === 'GET' && $path === '/articles/paginated') {
+            // Obtener idioma de query string, por defecto 'en'
+            $language = $_GET['language'] ?? null;
+            if ($language !== null) {
+                $language = trim((string)$language);
+                if ($language === '') {
+                    $language = null;
+                }
+            }
+            $language = $language ?? 'en';
+            
+            // Obtener página y tamaño de página
+            $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+            $pageSize = isset($_GET['pageSize']) ? (int)$_GET['pageSize'] : 20;
+            
+            // Validar parámetros
+            $page = max(1, $page);
+            $pageSize = max(1, min(100, $pageSize));
+            
+            return Response::ok($this->provider->getArticlesPaginated($language, $page, $pageSize));
+        }
+
         return Response::notFound('Ruta no encontrada');
     }
 

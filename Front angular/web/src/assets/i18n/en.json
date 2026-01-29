@@ -1,6 +1,7 @@
 {
   "NAV": {
     "ABOUT": "About",
+    "ARCHIVE": "Archive",
     "NEWS": "News",
     "SEARCH": "Search",
     "LANGUAGE": "Language",
@@ -45,6 +46,14 @@
     "TITLE": "Automatically verified news",
     "DESCRIPTION": "Weekly feed of updates automatically cross-checked with AI across our trusted dementia and neurocognitive sources.",
     "READ_MORE": "Read more"
+  },
+  "ARCHIVE": {
+    "TITLE": "News and Articles Archive",
+    "SUBTITLE": "Explore our complete archive of news and articles organized by language",
+    "NEWS_TAB": "News",
+    "ARTICLES_TAB": "Articles",
+    "NO_ARTICLES": "No articles available in this language.",
+    "NO_NEWS": "No news available in this language."
   },
   "FILTERS": {
     "DEMENTIA_TYPE": "Dementia type",
@@ -183,6 +192,11 @@
       "FALLBACK_DESCRIPTION": "Access clinical evidence and curated analyses with NeuroFinder, the advanced search engine that centralises specialised dementia information.",
       "IMAGE_ALT": "{{title}} - NeuroFinder analysis",
       "FALLBACK_IMAGE_ALT": "Dementia evidence article on NeuroFinder"
+    },
+    "ARCHIVE": {
+      "TITLE": "News and Articles Archive | NeuroFinder",
+      "DESCRIPTION": "Explore the complete archive of news and articles about dementia organized by language on NeuroFinder.",
+      "IMAGE_ALT": "News and articles archive on NeuroFinder"
     }
   }
 }

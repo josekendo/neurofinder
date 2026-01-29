@@ -17,7 +17,7 @@ export interface SeoConfig {
 export class SeoService {
   private readonly meta = inject(Meta);
   private readonly title = inject(Title);
-  private readonly baseUrl = 'https://www.neurofinder.org';
+  private readonly baseUrl = 'https://neurofinder.org';
   private readonly defaultImagePath = '/assets/meta/og-default.png';
   private readonly defaultImageAlt =
     'NeuroFinder, buscador avanzado sobre demencias que centraliza evidencia clínica';
@@ -44,6 +44,9 @@ export class SeoService {
     this.meta.updateTag({ property: 'og:type', content: type });
     this.meta.updateTag({ property: 'og:url', content: url });
     this.meta.updateTag({ property: 'og:site_name', content: 'NeuroFinder' });
+
+    // Actualizar canonical link dinámicamente
+    this.updateCanonicalLink(url);
 
     this.meta.updateTag({ name: 'twitter:title', content: title });
     this.meta.updateTag({ name: 'twitter:description', content: description });
@@ -72,6 +75,18 @@ export class SeoService {
     const normalizedPath = path ?? this.document?.location?.pathname ?? '/';
     const cleanPath = normalizedPath.startsWith('/') ? normalizedPath : `/${normalizedPath}`;
     return `${this.baseUrl}${cleanPath}`;
+  }
+
+  private updateCanonicalLink(url: string): void {
+    let canonicalLink = this.document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+    
+    if (!canonicalLink) {
+      canonicalLink = this.document.createElement('link');
+      canonicalLink.setAttribute('rel', 'canonical');
+      this.document.head.appendChild(canonicalLink);
+    }
+    
+    canonicalLink.setAttribute('href', url);
   }
 }
 

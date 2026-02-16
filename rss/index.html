@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NeuroFinder – Feeds RSS</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --card: #1a2332;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-hover: #79b8ff;
+      --success: #3fb950;
+      --radius: 8px;
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 1.5rem;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    .wrap { max-width: 720px; margin: 0 auto; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: var(--accent-hover); text-decoration: underline; }
+    h1 { font-size: 1.5rem; margin: 0 0 0.5rem; font-weight: 600; }
+    h2 {
+      font-size: 1.1rem;
+      margin: 2rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      font-weight: 600;
+    }
+    h2:first-of-type { margin-top: 0; }
+    .back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 1.5rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .back:hover { color: var(--accent); }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .card-title { font-weight: 600; margin: 0 0 0.25rem; }
+    .card-desc { font-size: 0.9rem; color: var(--muted); margin: 0 0 0.75rem; }
+    .url-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .url-box {
+      flex: 1;
+      min-width: 0;
+      font-size: 0.85rem;
+      font-family: ui-monospace, monospace;
+      background: rgba(0,0,0,.25);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      overflow-x: auto;
+    }
+    .btn-copy {
+      flex-shrink: 0;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.85rem;
+      font-family: var(--font);
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-copy:hover { background: var(--accent-hover); }
+    .btn-copy.copied { background: var(--success); }
+    .lang-section { margin-bottom: 2.5rem; }
+    .sub { font-size: 0.85rem; color: var(--muted); margin: 0 0 1rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a href="/" class="back" id="back-link">← Volver al inicio</a>
+
+    <!-- Español -->
+    <section class="lang-section" lang="es">
+      <h1>Feeds RSS – NeuroFinder</h1>
+      <p class="sub">Suscríbete a las últimas noticias y artículos por idioma.</p>
+
+      <h2>Español</h2>
+
+      <div class="card">
+        <div class="card-title">Noticias (español)</div>
+        <div class="card-desc">Últimas noticias de neurociencia y neurotecnología en español.</div>
+        <div class="url-row">
+          <input type="text" class="url-box" id="url-news-es" readonly value="" data-url="news-es.xml">
+          <button type="button" class="btn-copy" data-for="url-news-es" aria-label="Copiar URL">Copiar URL</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Artículos (español)</div>
+        <div class="card-desc">Últimos artículos y publicaciones científicas indexados en español.</div>
+        <div class="url-row">
+          <input type="text" class="url-box" id="url-articles-es" readonly value="" data-url="articles-es.xml">
+          <button type="button" class="btn-copy" data-for="url-articles-es" aria-label="Copiar URL">Copiar URL</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- English -->
+    <section class="lang-section" lang="en">
+      <h2>English</h2>
+
+      <div class="card">
+        <div class="card-title">News (English)</div>
+        <div class="card-desc">Latest neuroscience and neurotechnology news in English.</div>
+        <div class="url-row">
+          <input type="text" class="url-box" id="url-news-en" readonly value="" data-url="news-en.xml">
+          <button type="button" class="btn-copy" data-for="url-news-en" aria-label="Copy URL">Copy URL</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Articles (English)</div>
+        <div class="card-desc">Latest scientific articles and papers indexed in English.</div>
+        <div class="url-row">
+          <input type="text" class="url-box" id="url-articles-en" readonly value="" data-url="articles-en.xml">
+          <button type="button" class="btn-copy" data-for="url-articles-en" aria-label="Copy URL">Copy URL</button>
+        </div>
+      </div>
+    </section>
+
+    <a href="/" class="back">← Volver al inicio</a>
+  </div>
+
+  <script>
+    (function () {
+      var base = window.location.origin + window.location.pathname.replace(/\/index\.html$/, '').replace(/\/?$/, '');
+      var rssBase = base + (base.endsWith('/rss') ? '' : '/rss');
+      if (!rssBase.endsWith('/')) rssBase += '/';
+
+      document.querySelectorAll('.url-box[data-url]').forEach(function (input) {
+        input.value = rssBase + input.getAttribute('data-url');
+      });
+
+      document.querySelectorAll('.btn-copy').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var id = btn.getAttribute('data-for');
+          var input = document.getElementById(id);
+          var url = input && input.value;
+          if (!url) return;
+          navigator.clipboard.writeText(url).then(function () {
+            var label = btn.textContent;
+            btn.textContent = btn.closest('[lang="es"]') ? '¡Copiado!' : 'Copied!';
+            btn.classList.add('copied');
+            setTimeout(function () {
+              btn.textContent = label;
+              btn.classList.remove('copied');
+            }, 2000);
+          });
+        });
+      });
+
+      var back = document.getElementById('back-link');
+      if (back) {
+        var siteRoot = base.replace(/\/rss\/?$/, '').replace(/\/$/, '');
+        back.href = siteRoot ? siteRoot + '/' : '/';
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -29,6 +29,14 @@
       <mat-icon>search</mat-icon>
       {{ 'NAV.SEARCH' | translate }}
     </button>
+    <a
+      mat-icon-button
+      href="/rss/"
+      [attr.aria-label]="'NAV.RSS' | translate"
+      title="{{ 'NAV.RSS' | translate }}"
+    >
+      <mat-icon>rss_feed</mat-icon>
+    </a>
   </div>
   <div class="mobile-actions">
     @if (showShareFab) {
@@ -75,6 +83,10 @@
       <mat-icon>search</mat-icon>
       <span>{{ 'NAV.SEARCH' | translate }}</span>
     </button>
+    <a mat-menu-item href="/rss/">
+      <mat-icon>rss_feed</mat-icon>
+      <span>{{ 'NAV.RSS' | translate }}</span>
+    </a>
     <button mat-menu-item [matMenuTriggerFor]="langMenu">
       <mat-icon>language</mat-icon>
       <span>{{ 'NAV.LANGUAGE' | translate }}</span>
@@ -102,6 +114,7 @@
     <a routerLink="/news" routerLinkActive="active">{{ 'NAV.NEWS' | translate }}</a>
     <a routerLink="/archive" routerLinkActive="active">{{ 'NAV.ARCHIVE' | translate }}</a>
     <a routerLink="/quienes-somos" routerLinkActive="active">{{ 'NAV.ABOUT' | translate }}</a>
+    <a href="/rss/">{{ 'NAV.RSS' | translate }}</a>
     <a href="mailto:support&#64;neurofinder.org">support&#64;neurofinder.org</a>
   </section>
 </footer>

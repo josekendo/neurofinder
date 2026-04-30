@@ -54,14 +54,30 @@ if ($dbName === '' || $dbUser === '') {
     exit(1);
 }
 
-$defaultRssDir = (function () {
-    $cwd = getcwd();
-    $up = dirname($cwd);
-    $up2 = dirname($up);
-    return $up2 . DIRECTORY_SEPARATOR . 'rss';
-})();
-$rssDir = getenv('RSS_PATH') !== false ? getenv('RSS_PATH') : (getenv('RSS_DIR') !== false ? getenv('RSS_DIR') : ($config['RSS_PATH'] ?? $config['RSS_DIR'] ?? $defaultRssDir));
-$rssDir = rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $rssDir), DIRECTORY_SEPARATOR);
+// En cron, getcwd() puede ser '/' u otro directorio distinto al del script.
+// Usamos __DIR__ para que la ruta sea estable tanto por URL como por CLI/cron.
+$projectRoot = dirname(__DIR__, 2); // /.../www si el script está en /.../www/api/scripts
+$defaultRssDir = $projectRoot . DIRECTORY_SEPARATOR . 'rss';
+
+$rssDir = getenv('RSS_PATH') !== false
+    ? getenv('RSS_PATH')
+    : (getenv('RSS_DIR') !== false
+        ? getenv('RSS_DIR')
+        : ($config['RSS_PATH'] ?? $config['RSS_DIR'] ?? $defaultRssDir));
+
+$rssDir = trim((string)$rssDir);
+if ($rssDir === '') {
+    $rssDir = $defaultRssDir;
+}
+
+$rssDir = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $rssDir);
+
+// Si RSS_PATH/RSS_DIR es relativo, resolverlo desde la raíz del proyecto, no desde getcwd().
+if (!preg_match('~^(?:[A-Za-z]:)?[\\/]~', $rssDir)) {
+    $rssDir = $projectRoot . DIRECTORY_SEPARATOR . $rssDir;
+}
+
+$rssDir = rtrim($rssDir, DIRECTORY_SEPARATOR);
 if (!is_dir($rssDir)) {
     if (!mkdir($rssDir, 0755, true)) {
         fwrite(STDERR, "Error: No se puede crear el directorio RSS: $rssDir\n");
